@@ -1,0 +1,78 @@
+# ADR-001: Desenvolvimento em VPS Remota
+
+| Status   | Aceito     |
+|----------|------------|
+| Data     | 19-08-2026 |
+| Área     | Ambiente de Desenvolvimento |
+
+## Contexto
+
+O CineLake AI é uma plataforma de dados que executará múltiplos containers para PostgreSQL,
+MinIO, Airflow, Kafka, FastAPI, MLflow, servidor MCP, pipeline RAG, Prometheus e
+Grafana.
+
+A máquina local do desenvolvedor possui disco e RAM limitados.
+
+## Problema
+
+Onde o ambiente de desenvolvimento e a plataforma de execução devem ser hospedados?
+
+## Decisão
+
+Usar uma única VPS Ubuntu como ambiente de execução principal para toda a plataforma.
+
+O desenvolvimento ocorrerá através do VS Code Remote SSH.
+
+O PC local será utilizado apenas para:
+
+- VS Code
+- SSH
+- Navegador
+- Git quando necessário
+- Power BI Desktop futuramente
+
+Toda a infraestrutura pesada rodará na VPS.
+
+## Alternativas Consideradas
+
+### Docker Desktop Local
+
+- Alto uso de recursos locais.
+- Inviável devido à limitação de disco e RAM locais.
+- Deixaria o desenvolvimento lento.
+
+### GitHub Codespaces
+
+- Custo recorrente.
+- Menos controle sobre a infraestrutura.
+- Ainda requer um ambiente de execução em nuvem.
+
+### Ambientes de nuvem separados para cada serviço
+
+- Complexidade desnecessária nesta fase.
+- Custo operacional mais alto.
+
+## Prós e Contras (Compensações)
+
+- Uma única VPS pode se tornar um ponto único de falha.
+- A conexão remota requer uma conexão SSH estável.
+- O disco e a RAM devem ser monitorados cuidadosamente.
+
+## Consequências
+
+### Positivas
+
+- O ambiente de desenvolvimento é idêntico ao ambiente de execução.
+- Baixo consumo de recursos locais.
+- Mais fácil gerenciar uma única plataforma.
+- Menor custo em comparação com múltiplos serviços em nuvem.
+
+### Negativas
+
+- Necessidade de monitorar os limites de recursos da VPS.
+- Dependência de conexão remota.
+- Risco de concorrência por recursos entre os serviços.
+
+## Considerações Futuras
+
+Se a pressão sobre os recursos aumentar, migrar serviços selecionados para ofertas de nuvem gerenciadas ou dividir as cargas de trabalho entre várias instâncias de VPS.
