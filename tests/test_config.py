@@ -4,7 +4,7 @@ from cinelake.config import Settings
 
 
 def test_settings_default_environment(monkeypatch) -> None:
-    """As configurações devem usar os padrões de desenvolvimento quando as variáveis de ambiente estiverem ausentes."""
+    """Usa padrões de desenvolvimento quando variáveis de ambiente estão ausentes."""
     # Garante que as variáveis de ambiente não estejam definidas para o teste
     monkeypatch.delenv("CINELAKE_ENV", raising=False)
     monkeypatch.delenv("CINELAKE_LOG_LEVEL", raising=False)
