@@ -1,0 +1,2 @@
+[console_scripts]
+cinelake = cinelake.__main__:main

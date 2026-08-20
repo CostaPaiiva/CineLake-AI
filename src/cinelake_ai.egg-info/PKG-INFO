@@ -1,0 +1,92 @@
+Metadata-Version: 2.4
+Name: cinelake-ai
+Version: 0.1.0
+Summary: Production-Grade Data Engineering, Recommendation & Agentic Data Platform
+Author-email: Seu Nome <seu-email@example.com>
+Requires-Python: >=3.10
+Description-Content-Type: text/markdown
+Requires-Dist: python-dotenv>=1.0.0
+Provides-Extra: dev
+Requires-Dist: pytest>=8.0; extra == "dev"
+Requires-Dist: pytest-cov>=4.0; extra == "dev"
+Requires-Dist: ruff>=0.6; extra == "dev"
+Requires-Dist: mypy>=1.10; extra == "dev"
+
+# CineLake AI
+
+Production-Grade Data Engineering, Recommendation & Agentic Data Platform
+
+## Status
+
+**FASE 1 — Foundation**
+
+## What is CineLake AI?
+
+CineLake AI is a full data platform that uses real movie data to demonstrate:
+
+- Data Engineering
+- Data Architecture
+- Batch Processing
+- Streaming
+- Data Lake
+- Data Warehouse
+- Dimensional Modeling
+- Data Quality
+- Data Contracts
+- Data Lineage
+- Orchestration
+- Observability
+- Machine Learning
+- Recommendation Systems
+- MLOps
+- APIs
+- Retrieval-Augmented Generation (RAG)
+- Model Context Protocol (MCP)
+- CI/CD
+
+## Development environment
+
+The platform runs on a single VPS Ubuntu using VS Code Remote SSH.
+
+Local PC is used only for:
+
+- VS Code
+- SSH
+- Browser
+- Power BI Desktop later
+
+## Current repository layout
+
+```text
+cinelake-ai/
+├── .github/
+│   └── workflows/
+├── src/
+│   └── cinelake/
+├── ingestion/
+├── airflow/
+├── dbt_project/
+├── streaming/
+├── recommender/
+├── api/
+├── rag/
+├── mcp_server/
+├── data_quality/
+├── monitoring/
+├── infrastructure/
+├── tests/
+├── docs/
+│   ├── architecture/
+│   ├── adr/
+│   ├── runbooks/
+│   ├── data-model/
+│   ├── rag/
+│   ├── mcp/
+│   └── benchmarks/
+├── powerbi/
+├── scripts/
+├── .env.example
+├── .gitignore
+├── docker-compose.yml
+├── pyproject.toml
+└── README.md

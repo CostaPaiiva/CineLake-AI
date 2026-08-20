@@ -1,0 +1,12 @@
+README.md
+pyproject.toml
+src/cinelake/__init__.py
+src/cinelake/__main__.py
+src/cinelake/config.py
+src/cinelake_ai.egg-info/PKG-INFO
+src/cinelake_ai.egg-info/SOURCES.txt
+src/cinelake_ai.egg-info/dependency_links.txt
+src/cinelake_ai.egg-info/entry_points.txt
+src/cinelake_ai.egg-info/requires.txt
+src/cinelake_ai.egg-info/top_level.txt
+tests/test_config.py
