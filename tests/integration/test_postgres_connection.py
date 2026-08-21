@@ -1,8 +1,8 @@
 """Testes de integração para a conexão com o PostgreSQL."""
 
 import pytest
-
 from sqlalchemy import text
+
 from cinelake.db import check_database_connection, get_engine
 
 
@@ -24,7 +24,8 @@ def test_service_heartbeat_table_exists() -> None:
             result = conn.execute(
                 text("SELECT to_regclass('public.service_heartbeat')")
             ).scalar()
-            # Garante que o retorno do banco de dados seja o próprio nome da tabela, confirmando sua existência
+            # Garante que o retorno do banco de dados seja o próprio nome
+            # da tabela, confirmando sua existência
             assert result == "service_heartbeat"
     finally:
         # Garante que a engine de conexão do teste seja encerrada de forma limpa
