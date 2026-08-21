@@ -1,47 +1,41 @@
 # CineLake AI
 
-Production-Grade Data Engineering, Recommendation & Agentic Data Platform
+Plataforma de Engenharia de Dados, Recomendação e Agentes de Dados de Nível de Produção
 
 ## Status
 
-**FASE 1 — Foundation**
+**FASE 2 — Docker + PostgreSQL**
 
-## What is CineLake AI?
+## O que é o CineLake AI?
 
-CineLake AI is a full data platform that uses real movie data to demonstrate:
+O CineLake AI é uma plataforma de dados completa que utiliza dados reais de filmes para demonstrar:
 
-- Data Engineering
-- Data Architecture
-- Batch Processing
-- Streaming
+- Engenharia de Dados
+- Arquitetura de Dados
+- Processamento em Batch
+- Processamento em Streaming
 - Data Lake
 - Data Warehouse
-- Dimensional Modeling
-- Data Quality
-- Data Contracts
-- Data Lineage
-- Orchestration
-- Observability
+- Modelagem Dimensional
+- Qualidade de Dados (Data Quality)
+- Contratos de Dados (Data Contracts)
+- Linhagem de Dados (Data Lineage)
+- Orquestração
+- Observabilidade
 - Machine Learning
-- Recommendation Systems
+- Sistemas de Recomendação
 - MLOps
 - APIs
-- Retrieval-Augmented Generation (RAG)
+- Geração Aumentada de Recuperação (RAG)
 - Model Context Protocol (MCP)
 - CI/CD
 
-## Development environment
+## Ambiente de Desenvolvimento
 
-The platform runs on a single VPS Ubuntu using VS Code Remote SSH.
+A plataforma roda em uma única VPS Ubuntu.  
+O computador local é utilizado para SSH via PowerShell, navegador e, posteriormente, Power BI.
 
-Local PC is used only for:
-
-- VS Code
-- SSH
-- Browser
-- Power BI Desktop later
-
-## Current repository layout
+## Estrutura Atual do Repositório
 
 ```text
 cinelake-ai/
@@ -61,6 +55,8 @@ cinelake-ai/
 ├── monitoring/
 ├── infrastructure/
 ├── tests/
+│   ├── unit/
+│   └── integration/
 ├── docs/
 │   ├── architecture/
 │   ├── adr/
@@ -71,8 +67,10 @@ cinelake-ai/
 │   └── benchmarks/
 ├── powerbi/
 ├── scripts/
+├── alembic/
+├── docker-compose.yml
 ├── .env.example
 ├── .gitignore
-├── docker-compose.yml
 ├── pyproject.toml
 └── README.md
+```
