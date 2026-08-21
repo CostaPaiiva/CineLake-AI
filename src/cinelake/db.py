@@ -1,7 +1,4 @@
-"""Engine do banco de dados e funções de conexão.
-
-Nota: Este arquivo está nomeado como dp.py (provavelmente uma sigla ou pequeno erro de digitação para db.py).
-"""
+"""Engine do banco de dados e funções de conexão."""
 
 from sqlalchemy import create_engine
 from sqlalchemy.engine import Engine
