@@ -1,6 +1,6 @@
 """Engine do banco de dados e funções de conexão."""
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.engine import Engine
 
 from cinelake.config import settings
@@ -31,7 +31,7 @@ def check_database_connection() -> bool:
     engine = get_engine()
     try:
         with engine.connect() as conn:
-            conn.execute("SELECT 1")
+            conn.execute(text("SELECT 1"))
         return True
     finally:
         engine.dispose()

@@ -3,6 +3,8 @@ pyproject.toml
 src/cinelake/__init__.py
 src/cinelake/__main__.py
 src/cinelake/config.py
+src/cinelake/db.py
+src/cinelake/logging_config.py
 src/cinelake_ai.egg-info/PKG-INFO
 src/cinelake_ai.egg-info/SOURCES.txt
 src/cinelake_ai.egg-info/dependency_links.txt
