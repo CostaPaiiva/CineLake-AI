@@ -1,0 +1,49 @@
+# Definição dos serviços do Docker Compose
+services:
+  # Serviço do banco de dados PostgreSQL
+  postgres:
+    # Imagem oficial do PostgreSQL v16 usando a distribuição leve Alpine Linux
+    image: postgres:16-alpine
+    # Nome do container quando estiver rodando
+    container_name: cinelake-postgres
+    # Reinicia o container automaticamente a menos que ele tenha sido parado manualmente
+    restart: unless-stopped
+    # Variáveis de ambiente configuradas a partir do arquivo .env
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    # Mapeamento de portas (libera a porta 5432 apenas para acesso local no host/localhost)
+    ports:
+      - "127.0.0.1:5432:5432"
+    # Persistência de dados usando volumes nomeados do Docker
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    # Rede em que o container vai rodar
+    networks:
+      - cinelake-network
+    # Teste de saúde para garantir que o banco está pronto antes de outros serviços iniciarem
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    # Limites de recursos para evitar sobrecarga na máquina/VPS
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 1G
+
+# Definição dos volumes persistentes
+volumes:
+  # Volume para os dados do PostgreSQL
+  pgdata:
+    name: cinelake_pgdata
+
+# Definição das redes personalizadas
+networks:
+  # Rede isolada para comunicação segura entre os containers
+  cinelake-network:
+    name: cinelake-network
+    driver: bridge
