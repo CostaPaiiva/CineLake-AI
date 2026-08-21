@@ -1,9 +1,7 @@
-# Define o sistema de build a ser utilizado para empacotar o projeto
 [build-system]
 requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
-# Metadados do projeto principal
 [project]
 name = "cinelake-ai"
 version = "0.1.0"
@@ -13,12 +11,13 @@ requires-python = ">=3.10"
 authors = [
     { name = "Seu Nome", email = "seu-email@example.com" }
 ]
-# Dependências necessárias para a execução do projeto
 dependencies = [
-    "python-dotenv>=1.0.0"
+    "python-dotenv>=1.0.0",
+    "sqlalchemy>=2.0",
+    "psycopg[binary]>=3.1",
+    "alembic>=1.13"
 ]
 
-# Dependências opcionais, normalmente para desenvolvimento e testes
 [project.optional-dependencies]
 dev = [
     "pytest>=8.0",
@@ -27,35 +26,28 @@ dev = [
     "mypy>=1.10"
 ]
 
-# Cria comandos (entry points) executáveis no terminal
 [project.scripts]
 cinelake = "cinelake.__main__:main"
 
-# Configuração de pacotes para o setuptools
 [tool.setuptools.packages.find]
-where = ["src"] # Indica que o código fonte está na pasta src
+where = ["src"]
 
-# Configuração do linter Ruff
 [tool.ruff]
 line-length = 100
 target-version = "py310"
 exclude = [".venv", "build", "dist"]
 
-# Regras de linting do Ruff a serem ativadas
 [tool.ruff.lint]
 select = ["E", "F", "I", "N", "W", "UP", "B", "SIM"]
 
-# Configuração de organização de imports no Ruff
 [tool.ruff.lint.isort]
 known-first-party = ["cinelake"]
 
-# Configuração do MyPy (checagem estática de tipos)
 [tool.mypy]
 python_version = "3.10"
 strict = true
 ignore_missing_imports = true
 
-# Opções para a ferramenta de testes Pytest
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-q"
