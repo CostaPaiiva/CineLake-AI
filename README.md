@@ -1,76 +1,54 @@
 # CineLake AI
 
-Plataforma de Engenharia de Dados, Recomendação e Agentes de Dados de Nível de Produção
+Plataforma de Engenharia de Dados, Recomendação e IA Agêntica de nível produção.
 
 ## Status
 
-**FASE 2 — Docker + PostgreSQL**
+**FASE 3 — MOVIELENS**
 
 ## O que é o CineLake AI?
 
-O CineLake AI é uma plataforma de dados completa que utiliza dados reais de filmes para demonstrar:
+O CineLake AI é uma plataforma completa de dados que utiliza dados reais de filmes para demonstrar:
 
 - Engenharia de Dados
 - Arquitetura de Dados
-- Processamento em Batch
-- Processamento em Streaming
+- Processamento Batch
+- Streaming
 - Data Lake
 - Data Warehouse
 - Modelagem Dimensional
-- Qualidade de Dados (Data Quality)
-- Contratos de Dados (Data Contracts)
-- Linhagem de Dados (Data Lineage)
+- Qualidade de Dados
+- Contratos de Dados
+- Linhagem de Dados
 - Orquestração
 - Observabilidade
 - Machine Learning
 - Sistemas de Recomendação
 - MLOps
 - APIs
-- Geração Aumentada de Recuperação (RAG)
+- Geração Aumentada por Recuperação (RAG)
 - Model Context Protocol (MCP)
 - CI/CD
 
-## Ambiente de Desenvolvimento
+## Ambiente de desenvolvimento
 
 A plataforma roda em uma única VPS Ubuntu.  
-O computador local é utilizado para SSH via PowerShell, navegador e, posteriormente, Power BI.
+O PC local é usado apenas para PowerShell SSH, navegador e Power BI.
 
-## Estrutura Atual do Repositório
+## Estrutura atual do repositório
 
 ```text
 cinelake-ai/
-├── .github/
-│   └── workflows/
 ├── src/
 │   └── cinelake/
-├── ingestion/
-├── airflow/
-├── dbt_project/
-├── streaming/
-├── recommender/
-├── api/
-├── rag/
-├── mcp_server/
-├── data_quality/
-├── monitoring/
-├── infrastructure/
-├── tests/
-│   ├── unit/
-│   └── integration/
-├── docs/
-│   ├── architecture/
-│   ├── adr/
-│   ├── runbooks/
-│   ├── data-model/
-│   ├── rag/
-│   ├── mcp/
-│   └── benchmarks/
-├── powerbi/
-├── scripts/
+│       ├── ingestion/
+│       │   └── movielens/
+│       ├── config.py
+│       ├── db.py
+│       └── __main__.py
 ├── alembic/
+├── tests/
+│   └── unit/
 ├── docker-compose.yml
-├── .env.example
-├── .gitignore
 ├── pyproject.toml
 └── README.md
-```
