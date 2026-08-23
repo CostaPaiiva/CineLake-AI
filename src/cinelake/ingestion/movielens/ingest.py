@@ -129,6 +129,23 @@ def _finalizar_batch(
     )
 
 
+def _obter_valor(reg: dict[str, str], coluna: str) -> str | None:
+    """Busca o valor da coluna no registro do CSV testando tanto o nome da coluna quanto aliases (camelCase / snake_case)."""
+    if coluna in reg:
+        return reg[coluna]
+    aliases = {
+        "movie_id": "movieId",
+        "user_id": "userId",
+        "imdb_id": "imdbId",
+        "tmdb_id": "tmdbId",
+        "ts": "timestamp",
+    }
+    alias = aliases.get(coluna)
+    if alias and alias in reg:
+        return reg[alias]
+    return None
+
+
 def _ingest_arquivo(
     conn: Connection,
     caminho_csv: Path,
@@ -165,14 +182,14 @@ def _ingest_arquivo(
         linha: dict[str, Any] = {}
         # Itera sobre as colunas que esperamos receber desse arquivo
         for coluna in colunas:
-            valor = reg.get(coluna)
+            valor = _obter_valor(reg, coluna)
             # Se a coluna não existir na linha atual, pula para a próxima
-            if valor is None:
+            if valor is None or valor == "":
                 continue
             # Verifica se a coluna deve ser interpretada como inteiro
             if coluna in ("movie_id", "user_id", "ts", "imdb_id", "tmdb_id"):
                 # Faz a conversão segura removendo possíveis casas decimais (ex: '1.0' -> 1.0 -> 1)
-                linha[coluna] = int(float(valor)) if valor else None
+                linha[coluna] = int(float(valor))
             # Verifica se a coluna deve ser interpretada como decimal (rating do filme)
             elif coluna == "rating":
                 linha[coluna] = float(valor)
@@ -223,13 +240,14 @@ def ingerir_movielens(diretorio_dados: Path) -> dict[str, int]:
     # Inicializa os acumuladores globais de estatísticas
     total_processado = 0
     total_inserido = 0
+    batch_id: int | None = None
 
-    # Inicia o bloco de transação segura. Ao fim dele, se não houver erros, envia um COMMIT.
-    with engine.begin() as conn:
-        # Cria um novo lote na tabela de auditoria para esta execução
-        batch_id = _criar_batch(conn, "movielens")
+    try:
+        # Inicia o bloco de transação segura. Ao fim dele, se não houver erros, envia um COMMIT.
+        with engine.begin() as conn:
+            # Cria um novo lote na tabela de auditoria para esta execução
+            batch_id = _criar_batch(conn, "movielens")
 
-        try:
             # 1. Processamento da tabela de filmes (movies)
             arquivo_movies = diretorio_dados / "movies.csv"
             if arquivo_movies.exists():
@@ -309,24 +327,27 @@ def ingerir_movielens(diretorio_dados: Path) -> dict[str, int]:
             )
             logger.info("Ingestão concluída com sucesso. Batch %s", batch_id)
 
-        except Exception as exc:
-            # Caso aconteça um erro (ex: falha de disco, de rede ou dados corrompidos),
-            # grava a exceção nos logs e atualiza o status do lote para "failed" no banco.
-            logger.exception("Erro durante a ingestão do MovieLens")
-            _finalizar_batch(
-                conn,
-                batch_id,
-                "failed",
-                rows_processed=total_processado,
-                rows_inserted=total_inserido,
-                error_message=str(exc),
-            )
-            # Propaga o erro para invalidar a transação ativa e disparar o Rollback automático
-            raise
+    except Exception as exc:
+        # Caso aconteça um erro (ex: falha de disco, de rede ou dados corrompidos),
+        # grava a exceção nos logs e atualiza o status do lote para "failed" usando uma conexão limpa.
+        logger.exception("Erro durante a ingestão do MovieLens")
+        if batch_id is not None:
+            with engine.begin() as conn_err:
+                _finalizar_batch(
+                    conn_err,
+                    batch_id,
+                    "failed",
+                    rows_processed=total_processado,
+                    rows_inserted=total_inserido,
+                    error_message=str(exc),
+                )
+        # Propaga o erro
+        raise
 
     # Retorna o dicionário de resultados finais consolidados
     return {
-        "batch_id": batch_id,
+        "batch_id": batch_id or 0,
         "rows_processed": total_processado,
         "rows_inserted": total_inserido,
     }
+
