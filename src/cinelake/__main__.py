@@ -2,9 +2,11 @@
 
 import argparse
 import logging
+from pathlib import Path
 
 from cinelake.config import settings
 from cinelake.db import check_database_connection
+from cinelake.ingestion.movielens.ingest import ingerir_movielens
 from cinelake.logging_config import setup_logging
 
 
@@ -16,11 +18,25 @@ def main() -> None:
     # Configura o analisador de argumentos passados via terminal
     parser = argparse.ArgumentParser(description="CineLake AI CLI")
 
-    # Adiciona a flag opcional '--check-db' para testar a conexão com o banco
+    # Adiciona subparsers para suporte a subcomandos organizados
+    subparsers = parser.add_subparsers(dest="command", help="Comandos disponíveis")
+
+    # Subcomando 'check-db' para testar conexão com o banco
+    subparsers.add_parser("check-db", help="Verifica a conexão com o banco de dados")
+
+    # Subcomando 'ingest-movielens' para iniciar a ingestão
+    parser_ingest = subparsers.add_parser("ingest-movielens", help="Executa a ingestão do MovieLens")
+    parser_ingest.add_argument(
+        "--data-dir",
+        required=True,
+        help="Caminho para o diretório contendo os CSVs do MovieLens",
+    )
+
+    # Mantém compatibilidade legada com a flag '--check-db' antiga
     parser.add_argument(
         "--check-db",
         action="store_true",
-        help="Check database connectivity",
+        help="Check database connectivity (legado)",
     )
     args = parser.parse_args()
 
@@ -31,8 +47,8 @@ def main() -> None:
         extra={"environment": settings.environment},
     )
 
-    # Se a flag '--check-db' foi informada ao rodar a CLI
-    if args.check_db:
+    # Lógica de decisão baseada nos comandos/flags informados
+    if args.command == "check-db" or args.check_db:
         logger.info("Checking database connection...")
         ok = check_database_connection()
         if ok:
@@ -41,6 +57,23 @@ def main() -> None:
             logger.error("Database connection failed")
             # Encerra o script com código de erro 1 se a conexão falhar
             raise SystemExit(1)
+
+    elif args.command == "ingest-movielens":
+        logger.info("Starting MovieLens ingestion via CLI...")
+        diretorio = Path(args.data_dir)
+        if not diretorio.exists():
+            logger.error("Directory not found: %s", diretorio)
+            raise SystemExit(1)
+        try:
+            resultado = ingerir_movielens(diretorio)
+            logger.info("Ingestion completed: %s", resultado)
+        except Exception as exc:
+            logger.error("Ingestion failed: %s", exc)
+            raise SystemExit(1) from exc
+
+    else:
+        # Se nenhum argumento ou comando válido for fornecido, exibe a ajuda da CLI
+        parser.print_help()
 
 
 # Garante que o método main() só roda se o arquivo for executado diretamente (ex: python -m cinelake)
