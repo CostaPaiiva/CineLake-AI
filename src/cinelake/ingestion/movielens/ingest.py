@@ -183,8 +183,9 @@ def _ingest_arquivo(
         # Itera sobre as colunas que esperamos receber desse arquivo
         for coluna in colunas:
             valor = _obter_valor(reg, coluna)
-            # Se a coluna não existir na linha atual, pula para a próxima
-            if valor is None or valor == "":
+            # Se a coluna não tiver valor preenchido no CSV, define explicitamente como None
+            if valor is None or valor.strip() == "":
+                linha[coluna] = None
                 continue
             # Verifica se a coluna deve ser interpretada como inteiro
             if coluna in ("movie_id", "user_id", "ts", "imdb_id", "tmdb_id"):
