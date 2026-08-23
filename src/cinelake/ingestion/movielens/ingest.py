@@ -1,16 +1,17 @@
 """Pipeline de ingestão idempotente do MovieLens para PostgreSQL."""
 
 import csv
-from datetime import datetime, timezone
 import logging
+from datetime import datetime, timezone
 from pathlib import Path
+from typing import Any
 
 # Importa os módulos necessários do SQLAlchemy Core
-from sqlalchemy import func, insert, select, table, text
+from sqlalchemy import table, text
+from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.engine import Connection, Engine
 
 # Importa as configurações do projeto e a conexão com o banco
-from cinelake.config import settings
 from cinelake.db import get_engine
 
 # Configuração do logger local para registrar o andamento do processo
@@ -19,32 +20,32 @@ logger = logging.getLogger(__name__)
 # Definições das tabelas para referência programática no SQLAlchemy Core (sem usar classes ORM)
 TABELA_MOVIES = table(
     "movies",
-    text("movie_id"),  # Coluna ID do filme
-    text("title"),     # Coluna Título
-    text("genres"),    # Coluna Gêneros
+    text("movie_id"),  # type: ignore[arg-type] # Coluna ID do filme
+    text("title"),     # type: ignore[arg-type] # Coluna Título
+    text("genres"),    # type: ignore[arg-type] # Coluna Gêneros
 )
 
 TABELA_RATINGS = table(
     "ratings",
-    text("user_id"),   # Coluna ID do usuário
-    text("movie_id"),  # Coluna ID do filme
-    text("rating"),    # Coluna Nota da avaliação
-    text("ts"),        # Coluna Timestamp da avaliação
+    text("user_id"),   # type: ignore[arg-type] # Coluna ID do usuário
+    text("movie_id"),  # type: ignore[arg-type] # Coluna ID do filme
+    text("rating"),    # type: ignore[arg-type] # Coluna Nota da avaliação
+    text("ts"),        # type: ignore[arg-type] # Coluna Timestamp da avaliação
 )
 
 TABELA_TAGS = table(
     "tags",
-    text("user_id"),   # Coluna ID do usuário
-    text("movie_id"),  # Coluna ID do filme
-    text("tag"),       # Coluna Texto da tag
-    text("ts"),        # Coluna Timestamp da tag
+    text("user_id"),   # type: ignore[arg-type] # Coluna ID do usuário
+    text("movie_id"),  # type: ignore[arg-type] # Coluna ID do filme
+    text("tag"),       # type: ignore[arg-type] # Coluna Texto da tag
+    text("ts"),        # type: ignore[arg-type] # Coluna Timestamp da tag
 )
 
 TABELA_LINKS = table(
     "links",
-    text("movie_id"),  # Coluna ID do filme no MovieLens
-    text("imdb_id"),   # Coluna ID correspondente no IMDb
-    text("tmdb_id"),   # Coluna ID correspondente no TMDb
+    text("movie_id"),  # type: ignore[arg-type] # Coluna ID do filme no MovieLens
+    text("imdb_id"),   # type: ignore[arg-type] # Coluna ID correspondente no IMDb
+    text("tmdb_id"),   # type: ignore[arg-type] # Coluna ID correspondente no TMDb
 )
 
 
@@ -62,8 +63,9 @@ def _contar_registros(conn: Connection, nome_tabela: str) -> int:
     """Retorna a quantidade total de linhas atualmente em uma tabela (usado para calcular inserções)."""
     # Executa uma consulta direta SELECT COUNT(*) na tabela fornecida
     resultado = conn.execute(text(f"SELECT COUNT(*) FROM {nome_tabela}"))
-    # Extrai o primeiro valor numérico retornado do resultado
-    return int(resultado.scalar())
+    # Extrai o primeiro valor numérico retornado do resultado de forma segura para tipos
+    val = resultado.scalar()
+    return int(val) if val is not None else 0
 
 
 def _criar_batch(conn: Connection, fonte: str) -> int:
@@ -82,7 +84,8 @@ def _criar_batch(conn: Connection, fonte: str) -> int:
         {"source": fonte, "started_at": agora},
     )
     # Extrai e converte para inteiro o ID gerado pelo RETURNING do PostgreSQL
-    batch_id = int(resultado.scalar())
+    val = resultado.scalar()
+    batch_id = int(val) if val is not None else 0
     # Exibe no console/log que o lote foi criado com sucesso
     logger.info("Batch criado: %s", batch_id)
     return batch_id
@@ -159,7 +162,7 @@ def _ingest_arquivo(
     linhas = []
     # Itera sobre cada linha lida do CSV
     for reg in registros:
-        linha = {}
+        linha: dict[str, Any] = {}
         # Itera sobre as colunas que esperamos receber desse arquivo
         for coluna in colunas:
             valor = reg.get(coluna)
@@ -209,7 +212,7 @@ def _ingest_arquivo(
 
 def ingerir_movielens(diretorio_dados: Path) -> dict[str, int]:
     """Executa o pipeline completo de ingestão: lê todos os CSVs e grava no PostgreSQL de forma idempotente.
-    
+
     Toda a execução ocorre dentro de uma única transação de banco de dados.
     """
     # Registra no log o início de toda a rotina

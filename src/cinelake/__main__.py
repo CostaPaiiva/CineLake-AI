@@ -15,7 +15,7 @@ def main() -> None:
 
     # Configura o analisador de argumentos passados via terminal
     parser = argparse.ArgumentParser(description="CineLake AI CLI")
-    
+
     # Adiciona a flag opcional '--check-db' para testar a conexão com o banco
     parser.add_argument(
         "--check-db",

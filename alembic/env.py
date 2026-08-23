@@ -6,8 +6,9 @@ Ele define como o Alembic se conecta ao banco de dados e como lê os modelos do 
 
 from logging.config import fileConfig
 
-from alembic import context
 from sqlalchemy import create_engine, pool
+
+from alembic import context
 
 # Importa as configurações do projeto para obter as variáveis de ambiente (como a URL do banco)
 from cinelake.config import settings

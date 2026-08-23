@@ -8,7 +8,7 @@ from cinelake.config import settings
 
 def get_engine() -> Engine:
     """Cria e retorna a Engine do SQLAlchemy utilizando a URL do banco configurada.
-    
+
     Parâmetros:
     - pool_pre_ping=True: Verifica a saúde da conexão (com um teste simples de "ping") antes
       de entregá-la ao código, reconectando automaticamente se o banco tiver caído/reiniciado.
@@ -23,7 +23,7 @@ def get_engine() -> Engine:
 
 def check_database_connection() -> bool:
     """Realiza um teste simples de conexão com o banco de dados.
-    
+
     Executa a query mínima 'SELECT 1' para certificar que o banco está ativo e acessível.
     Retorna True em caso de sucesso e garante que os recursos de conexão sejam liberados
     ao rodar o 'engine.dispose()' no bloco 'finally'.

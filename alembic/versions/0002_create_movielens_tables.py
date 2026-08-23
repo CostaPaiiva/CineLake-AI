@@ -5,22 +5,22 @@ Revises: 0001
 Create Date: 2026-08-23
 
 """
-from typing import Sequence, Union
+from collections.abc import Sequence
 
-from alembic import op
 import sqlalchemy as sa
 
+from alembic import op
 
 # Identificadores de revisão do Alembic para controle de versão do banco de dados
 revision: str = "0002"
-down_revision: Union[str, None] = "0001"
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | None = "0001"
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
     """Cria as tabelas movies, ratings, tags, links e ingestion_batch."""
-    
+
     # Cria a tabela de filmes (movies) contendo ID, título e gêneros do MovieLens
     op.create_table(
         "movies",

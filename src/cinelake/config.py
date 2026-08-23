@@ -1,7 +1,7 @@
 """Configurações da aplicação carregadas a partir de variáveis de ambiente (.env)."""
 
-from dataclasses import dataclass
 import os
+from dataclasses import dataclass
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -36,7 +36,7 @@ class Settings:
         db = os.getenv("POSTGRES_DB", "cinelake")
         host = os.getenv("POSTGRES_HOST", "127.0.0.1")
         port = int(os.getenv("POSTGRES_PORT", "5432"))
-        
+
         # Constrói a URL do banco SQLAlchemy usando os dados anteriores se DATABASE_URL não estiver definida
         database_url = os.getenv(
             "DATABASE_URL",

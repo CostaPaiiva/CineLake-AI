@@ -1,9 +1,9 @@
 """Funções para baixar e extrair o dataset MovieLens."""
 
 import logging
-from pathlib import Path
 import urllib.request
 import zipfile
+from pathlib import Path
 
 # Configuração do logger local para registrar o progresso das operações
 logger = logging.getLogger(__name__)
@@ -16,11 +16,11 @@ URL_MOVIELENS_PEQUENO = (
 
 def baixar_movielens(url: str, destino: Path) -> Path:
     """Baixa o arquivo ZIP do MovieLens e retorna o caminho do arquivo.
-    
+
     Args:
         url: Link direto para download do dataset (.zip)
         destino: Diretório local onde o arquivo zip será salvo
-        
+
     Returns:
         Caminho absoluto do arquivo ZIP baixado
     """
@@ -42,7 +42,7 @@ def baixar_movielens(url: str, destino: Path) -> Path:
 
 def extrair_zip(caminho_zip: Path, destino: Path) -> None:
     """Extrai o conteúdo do ZIP para a pasta de destino.
-    
+
     Args:
         caminho_zip: Caminho do arquivo ZIP de origem
         destino: Pasta onde os arquivos extraídos serão salvos
