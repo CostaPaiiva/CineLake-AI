@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any
 
 # Importa os módulos necessários do SQLAlchemy Core
-from sqlalchemy import table, text
+from sqlalchemy import column, table, text
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.engine import Connection, Engine
 
@@ -20,32 +20,32 @@ logger = logging.getLogger(__name__)
 # Definições das tabelas para referência programática no SQLAlchemy Core (sem usar classes ORM)
 TABELA_MOVIES = table(
     "movies",
-    text("movie_id"),  # type: ignore[arg-type] # Coluna ID do filme
-    text("title"),     # type: ignore[arg-type] # Coluna Título
-    text("genres"),    # type: ignore[arg-type] # Coluna Gêneros
+    column("movie_id"),  # Coluna ID do filme
+    column("title"),     # Coluna Título
+    column("genres"),    # Coluna Gêneros
 )
 
 TABELA_RATINGS = table(
     "ratings",
-    text("user_id"),   # type: ignore[arg-type] # Coluna ID do usuário
-    text("movie_id"),  # type: ignore[arg-type] # Coluna ID do filme
-    text("rating"),    # type: ignore[arg-type] # Coluna Nota da avaliação
-    text("ts"),        # type: ignore[arg-type] # Coluna Timestamp da avaliação
+    column("user_id"),   # Coluna ID do usuário
+    column("movie_id"),  # Coluna ID do filme
+    column("rating"),    # Coluna Nota da avaliação
+    column("ts"),        # Coluna Timestamp da avaliação
 )
 
 TABELA_TAGS = table(
     "tags",
-    text("user_id"),   # type: ignore[arg-type] # Coluna ID do usuário
-    text("movie_id"),  # type: ignore[arg-type] # Coluna ID do filme
-    text("tag"),       # type: ignore[arg-type] # Coluna Texto da tag
-    text("ts"),        # type: ignore[arg-type] # Coluna Timestamp da tag
+    column("user_id"),   # Coluna ID do usuário
+    column("movie_id"),  # Coluna ID do filme
+    column("tag"),       # Coluna Texto da tag
+    column("ts"),        # Coluna Timestamp da tag
 )
 
 TABELA_LINKS = table(
     "links",
-    text("movie_id"),  # type: ignore[arg-type] # Coluna ID do filme no MovieLens
-    text("imdb_id"),   # type: ignore[arg-type] # Coluna ID correspondente no IMDb
-    text("tmdb_id"),   # type: ignore[arg-type] # Coluna ID correspondente no TMDb
+    column("movie_id"),  # Coluna ID do filme no MovieLens
+    column("imdb_id"),   # Coluna ID correspondente no IMDb
+    column("tmdb_id"),   # Coluna ID correspondente no TMDb
 )
 
 
