@@ -1,4 +1,4 @@
-"""Ponto de entrada da CLI para o CineLake AI."""
+"""Ponto de entrada da Interface de Linha de Comando (CLI) do CineLake AI."""
 
 import argparse
 import logging
@@ -6,111 +6,101 @@ from pathlib import Path
 
 from cinelake.config import settings
 from cinelake.db import check_database_connection
-from cinelake.ingestion.movielens.ingest import ingerir_movielens
-from cinelake.ingestion.tmdb.ingest import ingerir_tmdb
 from cinelake.logging_config import setup_logging
 
 
 def main() -> None:
-    """Executa um teste básico ('smoke test') e inicializa o CineLake AI."""
-    # Configura o nível de logs com base nas configurações (ex: INFO, DEBUG, WARN)
+    """Configura o analisador de argumentos e dispara o comando solicitado na CLI."""
+    # Configura os formatos e níveis de log centralizados da aplicação
     setup_logging(settings.log_level)
 
-    # Configura o analisador de argumentos passados via terminal
+    # Cria o parser principal da CLI
     parser = argparse.ArgumentParser(description="CineLake AI CLI")
+    # Subparsers para gerenciar os subcomandos disponíveis no projeto
+    subparsers = parser.add_subparsers(dest="comando", required=True)
 
-    # Adiciona subparsers para suporte a subcomandos organizados
-    subparsers = parser.add_subparsers(dest="command", help="Comandos disponíveis")
+    # 1. Subcomando: check-db (Validação de conectividade com o banco)
+    parser_check = subparsers.add_parser(
+        "check-db",
+        help="Verifica conexão com o banco de dados PostgreSQL",
+    )
+    parser_check.set_defaults(func=_cmd_check_db)
 
-    # Subcomando 'check-db' para testar conexão com o banco
-    subparsers.add_parser("check-db", help="Verifica a conexão com o banco de dados")
-
-    # Subcomando 'ingest-movielens' para iniciar a ingestão do MovieLens
-    parser_ingest = subparsers.add_parser("ingest-movielens", help="Executa a ingestão do MovieLens")
-    parser_ingest.add_argument(
+    # 2. Subcomando: ingest-movielens (Ingestão em lote dos CSVs do MovieLens)
+    parser_ingest_ml = subparsers.add_parser(
+        "ingest-movielens",
+        help="Ingere os arquivos CSV do MovieLens no PostgreSQL",
+    )
+    parser_ingest_ml.add_argument(
         "--data-dir",
-        required=True,
-        help="Caminho para o diretório contendo os CSVs do MovieLens",
+        type=Path,
+        default=Path("data/raw/movielens/ml-latest-small"),
+        help="Diretório contendo os CSVs extraídos (padrão: data/raw/movielens/ml-latest-small)",
     )
+    parser_ingest_ml.set_defaults(func=_cmd_ingest_movielens)
 
-    # Subcomando 'ingest-tmdb' para iniciar a ingestão do TMDb
-    parser_tmdb = subparsers.add_parser("ingest-tmdb", help="Executa a ingestão incremental do TMDb")
-    parser_tmdb.add_argument(
+    # 3. Subcomando: ingest-tmdb (Ingestão incremental da API do TMDb)
+    parser_ingest_tmdb = subparsers.add_parser(
+        "ingest-tmdb",
+        help="Ingere metadados incrementais do catálogo TMDB",
+    )
+    parser_ingest_tmdb.add_argument(
         "--output-dir",
-        default="data/raw/tmdb",
-        help="Caminho para salvar os JSONs brutos do TMDb (padrão: data/raw/tmdb)",
+        type=Path,
+        default=Path("data/raw/tmdb"),
+        help="Diretório onde os arquivos JSON brutos serão salvos (padrão: data/raw/tmdb)",
     )
-    parser_tmdb.add_argument(
-        "--rps",
-        type=float,
-        default=4.0,
-        help="Requisições por segundo para rate limit (padrão: 4.0)",
-    )
-    parser_tmdb.add_argument(
-        "--limit",
+    parser_ingest_tmdb.add_argument(
+        "--max-filmes",
         type=int,
         default=None,
-        help="Limite de filmes para processar nesta execução (opcional)",
+        help="Limite opcional de filmes a processar nesta rodada",
     )
+    parser_ingest_tmdb.set_defaults(func=_cmd_ingest_tmdb)
 
-    # Mantém compatibilidade legada com a flag '--check-db' antiga
-    parser.add_argument(
-        "--check-db",
-        action="store_true",
-        help="Check database connectivity (legado)",
-    )
+    # Processa os argumentos fornecidos pelo usuário no terminal
     args = parser.parse_args()
+    # Executa a função vinculada ao subcomando escolhido
+    args.func(args)
 
-    # Obtém a instância do logger para este arquivo
+
+def _cmd_check_db(args: argparse.Namespace) -> None:
+    """Executa a verificação de saúde da conexão com o PostgreSQL."""
     logger = logging.getLogger(__name__)
-    logger.info(
-        "CineLake AI initialized",
-        extra={"environment": settings.environment},
-    )
-
-    # Lógica de decisão baseada nos comandos/flags informados
-    if args.command == "check-db" or args.check_db:
-        logger.info("Checking database connection...")
-        ok = check_database_connection()
-        if ok:
-            logger.info("Database connection successful")
-        else:
-            logger.error("Database connection failed")
-            # Encerra o script com código de erro 1 se a conexão falhar
-            raise SystemExit(1)
-
-    elif args.command == "ingest-movielens":
-        logger.info("Starting MovieLens ingestion via CLI...")
-        diretorio = Path(args.data_dir)
-        if not diretorio.exists():
-            logger.error("Directory not found: %s", diretorio)
-            raise SystemExit(1)
-        try:
-            resultado = ingerir_movielens(diretorio)
-            logger.info("Ingestion completed: %s", resultado)
-        except Exception as exc:
-            logger.error("Ingestion failed: %s", exc)
-            raise SystemExit(1) from exc
-
-    elif args.command == "ingest-tmdb":
-        logger.info("Starting TMDb ingestion via CLI...")
-        diretorio_saida = Path(args.output_dir)
-        try:
-            resultado_tmdb = ingerir_tmdb(
-                diretorio_saida=diretorio_saida,
-                requests_per_second=args.rps,
-                max_filmes_por_execucao=args.limit,
-            )
-            logger.info("TMDb Ingestion completed: %s", resultado_tmdb)
-        except Exception as exc:
-            logger.error("TMDb Ingestion failed: %s", exc)
-            raise SystemExit(1) from exc
-
+    logger.info("Verificando conexão com o banco de dados...")
+    if check_database_connection():
+        logger.info("Conexão com o banco de dados bem-sucedida")
     else:
-        # Se nenhum argumento ou comando válido for fornecido, exibe a ajuda da CLI
-        parser.print_help()
+        logger.error("Falha na conexão com o banco de dados")
+        # Encerra a execução com código de saída 1 (erro)
+        raise SystemExit(1)
 
 
-# Garante que o método main() só roda se o arquivo for executado diretamente (ex: python -m cinelake)
+def _cmd_ingest_movielens(args: argparse.Namespace) -> None:
+    """Dispara o pipeline de ingestão do dataset MovieLens."""
+    # Import tardio para otimizar tempo de inicialização da CLI
+    from cinelake.ingestion.movielens.ingest import ingerir_movielens
+
+    logger = logging.getLogger(__name__)
+    logger.info("Iniciando ingestão do MovieLens a partir de %s...", args.data_dir)
+    resultado = ingerir_movielens(args.data_dir)
+    logger.info("Ingestão do MovieLens finalizada com sucesso: %s", resultado)
+
+
+def _cmd_ingest_tmdb(args: argparse.Namespace) -> None:
+    """Dispara o pipeline de ingestão incremental de metadados do TMDb."""
+    # Import tardio para otimizar tempo de inicialização da CLI
+    from cinelake.ingestion.tmdb.ingest import ingerir_tmdb
+
+    logger = logging.getLogger(__name__)
+    logger.info("Iniciando ingestão incremental do TMDb...")
+    resultado = ingerir_tmdb(
+        diretorio_saida=args.output_dir,
+        max_filmes_por_execucao=args.max_filmes,
+    )
+    logger.info("Ingestão do TMDb finalizada com sucesso: %s", resultado)
+
+
+# Ponto de entrada padrão para execução via módulo (ex: python -m cinelake)
 if __name__ == "__main__":
     main()
