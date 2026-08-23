@@ -154,11 +154,11 @@ def ingerir_tmdb(
             # 2. Obtém o ponto de parada anterior (watermark)
             watermark = _obter_watermark(conn)
 
-            # 3. Busca próximos movie_ids cadastrados no banco que ainda não foram enriquecidos
+            # 3. Busca próximos movie_ids e seus respectivos tmdb_ids a partir da tabela links
             query = """
-                SELECT movie_id
-                FROM movies
-                WHERE movie_id > :watermark
+                SELECT movie_id, tmdb_id
+                FROM links
+                WHERE movie_id > :watermark AND tmdb_id IS NOT NULL
                 ORDER BY movie_id
             """
             if max_filmes_por_execucao:
@@ -171,22 +171,23 @@ def ingerir_tmdb(
                 params = {"watermark": watermark}
 
             resultado = conn.execute(text(query), params)
-            movie_ids = [int(row[0]) for row in resultado]
+            # Armazena tuplas (movie_id, tmdb_id)
+            filmes = [(int(row[0]), int(row[1])) for row in resultado]
 
-            logger.info("Filmes a processar nesta execução: %d", len(movie_ids))
+            logger.info("Filmes a processar nesta execução: %d", len(filmes))
 
-            # 4. Itera sobre cada filme buscando os metadados na API do TMDb
-            for movie_id in movie_ids:
+            # 4. Itera sobre cada filme buscando os metadados na API do TMDb usando o tmdb_id
+            for movie_id, tmdb_id in filmes:
                 total_processado += 1
-                logger.info("Processando movie_id=%s", movie_id)
+                logger.info("Processando movie_id=%s (tmdb_id=%s)", movie_id, tmdb_id)
 
                 try:
-                    # Faz as 3 requisições necessárias para enriquecer o filme
-                    detalhes = cliente.get_movie_details(movie_id)
-                    creditos = cliente.get_movie_credits(movie_id)
-                    keywords = cliente.get_movie_keywords(movie_id)
+                    # Faz as 3 requisições necessárias usando o ID correto do TMDb
+                    detalhes = cliente.get_movie_details(tmdb_id)
+                    creditos = cliente.get_movie_credits(tmdb_id)
+                    keywords = cliente.get_movie_keywords(tmdb_id)
 
-                    # Persiste os dados brutos no Data Lake (camada Raw / Landing)
+                    # Persiste os dados brutos no Data Lake usando o movie_id para manter o padrão
                     _salvar_json(diretorio_saida, movie_id, "details", detalhes)
                     _salvar_json(diretorio_saida, movie_id, "credits", creditos)
                     _salvar_json(diretorio_saida, movie_id, "keywords", keywords)
