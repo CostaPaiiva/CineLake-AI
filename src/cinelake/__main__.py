@@ -52,8 +52,10 @@ def main() -> None:
     )
     parser_ingest_tmdb.add_argument(
         "--max-filmes",
+        "--limit",
         type=int,
         default=None,
+        dest="max_filmes",
         help="Limite opcional de filmes a processar nesta rodada",
     )
     parser_ingest_tmdb.set_defaults(func=_cmd_ingest_tmdb)
