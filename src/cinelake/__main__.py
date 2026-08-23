@@ -7,6 +7,7 @@ from pathlib import Path
 from cinelake.config import settings
 from cinelake.db import check_database_connection
 from cinelake.ingestion.movielens.ingest import ingerir_movielens
+from cinelake.ingestion.tmdb.ingest import ingerir_tmdb
 from cinelake.logging_config import setup_logging
 
 
@@ -24,12 +25,32 @@ def main() -> None:
     # Subcomando 'check-db' para testar conexão com o banco
     subparsers.add_parser("check-db", help="Verifica a conexão com o banco de dados")
 
-    # Subcomando 'ingest-movielens' para iniciar a ingestão
+    # Subcomando 'ingest-movielens' para iniciar a ingestão do MovieLens
     parser_ingest = subparsers.add_parser("ingest-movielens", help="Executa a ingestão do MovieLens")
     parser_ingest.add_argument(
         "--data-dir",
         required=True,
         help="Caminho para o diretório contendo os CSVs do MovieLens",
+    )
+
+    # Subcomando 'ingest-tmdb' para iniciar a ingestão do TMDb
+    parser_tmdb = subparsers.add_parser("ingest-tmdb", help="Executa a ingestão incremental do TMDb")
+    parser_tmdb.add_argument(
+        "--output-dir",
+        default="data/raw/tmdb",
+        help="Caminho para salvar os JSONs brutos do TMDb (padrão: data/raw/tmdb)",
+    )
+    parser_tmdb.add_argument(
+        "--rps",
+        type=float,
+        default=4.0,
+        help="Requisições por segundo para rate limit (padrão: 4.0)",
+    )
+    parser_tmdb.add_argument(
+        "--limit",
+        type=int,
+        default=None,
+        help="Limite de filmes para processar nesta execução (opcional)",
     )
 
     # Mantém compatibilidade legada com a flag '--check-db' antiga
@@ -69,6 +90,20 @@ def main() -> None:
             logger.info("Ingestion completed: %s", resultado)
         except Exception as exc:
             logger.error("Ingestion failed: %s", exc)
+            raise SystemExit(1) from exc
+
+    elif args.command == "ingest-tmdb":
+        logger.info("Starting TMDb ingestion via CLI...")
+        diretorio_saida = Path(args.output_dir)
+        try:
+            resultado_tmdb = ingerir_tmdb(
+                diretorio_saida=diretorio_saida,
+                requests_per_second=args.rps,
+                max_filmes_por_execucao=args.limit,
+            )
+            logger.info("TMDb Ingestion completed: %s", resultado_tmdb)
+        except Exception as exc:
+            logger.error("TMDb Ingestion failed: %s", exc)
             raise SystemExit(1) from exc
 
     else:

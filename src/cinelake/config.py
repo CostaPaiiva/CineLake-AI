@@ -23,6 +23,7 @@ class Settings:
     postgres_host: str
     postgres_port: int
     database_url: str
+    tmdb_api_key: str = ""
 
     @classmethod
     def from_env(cls) -> "Settings":
@@ -54,6 +55,7 @@ class Settings:
             postgres_host=host,
             postgres_port=port,
             database_url=database_url,
+            tmdb_api_key=os.getenv("TMDB_API_KEY", ""),
         )
 
 
