@@ -183,7 +183,7 @@ def _ingest_arquivo(
         linhas.append(linha)
 
     # Constrói o comando inicial de INSERT usando o SQLAlchemy Core
-    stmt = insert(table(tabela_nome, *[text(c) for c in colunas]))  # type: ignore[arg-type]
+    stmt = insert(table(tabela_nome, *[column(c) for c in colunas]))
 
     # Configura a estratégia para ignorar conflitos de chaves duplicadas
     if tipo_conflito == "nada":
