@@ -1,49 +1,86 @@
-# Definição dos serviços do Docker Compose
+# Definição dos serviços (containers) que serão executados
 services:
   # Serviço do banco de dados PostgreSQL
   postgres:
-    # Imagem oficial do PostgreSQL v16 usando a distribuição leve Alpine Linux
+    # Imagem oficial do PostgreSQL versão 16 rodando sobre Alpine Linux (mais leve)
     image: postgres:16-alpine
-    # Nome do container quando estiver rodando
+    # Nome do container quando estiver em execução
     container_name: cinelake-postgres
-    # Reinicia o container automaticamente a menos que ele tenha sido parado manualmente
+    # Reinicia o container automaticamente caso ele caia, a menos que seja parado manualmente
     restart: unless-stopped
-    # Variáveis de ambiente configuradas a partir do arquivo .env
+    # Variáveis de ambiente carregadas do arquivo .env para configurar o banco de dados
     environment:
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
-    # Mapeamento de portas (libera a porta 5432 apenas para acesso local no host/localhost)
+      POSTGRES_USER: ${POSTGRES_USER}          # Nome do usuário administrador
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}  # Senha do usuário administrador
+      POSTGRES_DB: ${POSTGRES_DB}              # Nome do banco de dados padrão
+    # Mapeamento de portas (libera a porta 5432 apenas para o localhost/máquina local)
     ports:
       - "127.0.0.1:5432:5432"
-    # Persistência de dados usando volumes nomeados do Docker
+    # Mapeamento de volumes persistentes para não perder os dados do banco ao reiniciar
     volumes:
       - pgdata:/var/lib/postgresql/data
-    # Rede em que o container vai rodar
+    # Rede em que o container irá rodar (permite comunicação direta com outros containers na mesma rede)
     networks:
       - cinelake-network
-    # Teste de saúde para garantir que o banco está pronto antes de outros serviços iniciarem
+    # Verificação de integridade (Healthcheck) para garantir que o banco está pronto para conexões
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 5s
       timeout: 5s
       retries: 5
-    # Limites de recursos para evitar sobrecarga na máquina/VPS
+    # Limitação de recursos de hardware para evitar consumo excessivo da VPS
     deploy:
       resources:
         limits:
-          cpus: "1.0"
-          memory: 1G
+          cpus: "1.0"   # Limita o uso a no máximo 1 núcleo de CPU
+          memory: 1G    # Limita o uso a no máximo 1 Gigabyte de memória RAM
 
-# Definição dos volumes persistentes
+  # Serviço do MinIO (Object Storage compatível com a API do AWS S3)
+  minio:
+    # Imagem oficial mais recente do MinIO
+    image: minio/minio:latest
+    # Nome do container quando estiver em execução
+    container_name: cinelake-minio
+    # Reinicia o container automaticamente caso ele caia, a menos que seja parado manualmente
+    restart: unless-stopped
+    # Variáveis de ambiente carregadas do arquivo .env para as credenciais do MinIO
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY}      # Chave de acesso root
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY}  # Chave secreta de acesso root
+    # Mapeamento de portas (libera portas para a API e para o painel web apenas localmente)
+    ports:
+      - "127.0.0.1:9000:9000"  # Porta da API do S3
+      - "127.0.0.1:9001:9001"  # Porta do painel de administração (console)
+    # Mapeamento de volumes persistentes para salvar os arquivos do MinIO
+    volumes:
+      - minio_data:/data
+    # Rede de comunicação
+    networks:
+      - cinelake-network
+    # Comando de inicialização do servidor MinIO definindo a porta do console web
+    command: server /data --console-address ":9001"
+    # Verificação de integridade para checar se o MinIO está ativo e respondendo
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    # Limitação de recursos de hardware
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"   # Limita o uso a no máximo 1 núcleo de CPU
+          memory: 1G    # Limita o uso a no máximo 1 Gigabyte de memória RAM
+
+# Definição dos volumes persistentes nomeados
 volumes:
-  # Volume para os dados do PostgreSQL
   pgdata:
-    name: cinelake_pgdata
+    name: cinelake_pgdata       # Nome do volume no Docker para o banco de dados
+  minio_data:
+    name: cinelake_minio_data   # Nome do volume no Docker para o armazenamento de arquivos do MinIO
 
-# Definição das redes personalizadas
+# Definição de redes personalizadas
 networks:
-  # Rede isolada para comunicação segura entre os containers
   cinelake-network:
-    name: cinelake-network
-    driver: bridge
+    name: cinelake-network      # Nome da rede docker
+    driver: bridge              # Driver de rede do tipo bridge (padrão para comunicação em uma única máquina)
