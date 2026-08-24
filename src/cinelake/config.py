@@ -1,18 +1,18 @@
-"""Configurações globais da aplicação carregadas a partir de variáveis de ambiente (.env)."""
+"""Configurações da aplicação carregadas a partir de variáveis de ambiente."""
 
-import os
 from dataclasses import dataclass
+import os
 from pathlib import Path
 
 from dotenv import load_dotenv
 
-# Define o caminho raiz absoluto do projeto subindo 2 níveis na árvore de diretórios
+# Define o diretório raiz do projeto (PROJECT_ROOT) subindo 2 níveis a partir deste arquivo (src/cinelake/config.py)
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 
 @dataclass(frozen=True)
 class Settings:
-    """Objeto imutável de configurações para garantir consistência em toda a aplicação."""
+    """Objeto de configuração imutável (frozen=True) para a aplicação."""
 
     project_name: str
     environment: str
@@ -24,29 +24,44 @@ class Settings:
     postgres_port: int
     database_url: str
     tmdb_api_key: str
+    minio_access_key: str
+    minio_secret_key: str
+    minio_endpoint: str
+    minio_bucket: str
+    minio_use_ssl: bool
 
     @classmethod
     def from_env(cls) -> "Settings":
-        """Carrega e valida as configurações a partir do arquivo .env e variáveis do sistema."""
-        # Carrega o arquivo .env localizado na raiz do projeto
+        """Carrega as configurações a partir do arquivo .env e variáveis de ambiente."""
+        # Carrega as variáveis do arquivo .env localizado na raiz do projeto
         load_dotenv(PROJECT_ROOT / ".env")
 
-        # Configurações do PostgreSQL com valores padrão para desenvolvimento
+        # Configurações do PostgreSQL com valores padrão (fallback) caso não estejam no ambiente
         user = os.getenv("POSTGRES_USER", "cinelake")
         password = os.getenv("POSTGRES_PASSWORD", "cinelake_password")
         db = os.getenv("POSTGRES_DB", "cinelake")
         host = os.getenv("POSTGRES_HOST", "127.0.0.1")
         port = int(os.getenv("POSTGRES_PORT", "5432"))
-
-        # Constrói a URL do SQLAlchemy caso DATABASE_URL não tenha sido informada explicitamente
+        
+        # Constrói a URL do banco caso DATABASE_URL não esteja explicitamente configurada
         database_url = os.getenv(
             "DATABASE_URL",
             f"postgresql+psycopg://{user}:{password}@{host}:{port}/{db}",
         )
-        # Chave de autenticação na API do TMDb
+        
+        # Chave da API do TMDB
         tmdb_api_key = os.getenv("TMDB_API_KEY", "")
+        
+        # Configurações do MinIO com valores padrão (fallback) caso não estejam no ambiente
+        minio_access_key = os.getenv("MINIO_ACCESS_KEY", "cinelake_minio")
+        minio_secret_key = os.getenv("MINIO_SECRET_KEY", "cinelake_minio_secret")
+        minio_endpoint = os.getenv("MINIO_ENDPOINT", "127.0.0.1:9000")
+        minio_bucket = os.getenv("MINIO_BUCKET", "data-lake")
+        
+        # Converte a string do SSL para um valor booleano Python (True/False)
+        minio_use_ssl = os.getenv("MINIO_USE_SSL", "false").lower() == "true"
 
-        # Retorna a instância preenchida e tipada
+        # Retorna a instância da classe Settings populada com todas as configurações
         return cls(
             project_name="CineLake AI",
             environment=os.getenv("CINELAKE_ENV", "development"),
@@ -58,8 +73,13 @@ class Settings:
             postgres_port=port,
             database_url=database_url,
             tmdb_api_key=tmdb_api_key,
+            minio_access_key=minio_access_key,
+            minio_secret_key=minio_secret_key,
+            minio_endpoint=minio_endpoint,
+            minio_bucket=minio_bucket,
+            minio_use_ssl=minio_use_ssl,
         )
 
 
-# Instância singleton global de configurações para importação direta em outros módulos
+# Cria uma instância única global das configurações para ser importada e usada por todo o projeto
 settings = Settings.from_env()
