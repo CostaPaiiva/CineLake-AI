@@ -60,6 +60,22 @@ def main() -> None:
     )
     parser_ingest_tmdb.set_defaults(func=_cmd_ingest_tmdb)
 
+    # 4. Subcomando: ingest-datalake-bronze (Ingestão de dados brutos no Data Lake bronze)
+    parser_bronze = subparsers.add_parser("ingest-datalake-bronze", help="Ingere dados brutos no Data Lake bronze")
+    parser_bronze.add_argument(
+        "--movielens-dir",
+        type=Path,
+        default=Path("data/raw/movielens/ml-latest-small"),
+        help="Diretório com CSVs do MovieLens",
+    )
+    parser_bronze.add_argument(
+        "--tmdb-dir",
+        type=Path,
+        default=Path("data/raw/tmdb"),
+        help="Diretório com JSONs do TMDB",
+    )
+    parser_bronze.set_defaults(func=_cmd_ingest_bronze)
+
     # Processa os argumentos fornecidos pelo usuário no terminal
     args = parser.parse_args()
     # Executa a função vinculada ao subcomando escolhido
@@ -101,6 +117,16 @@ def _cmd_ingest_tmdb(args: argparse.Namespace) -> None:
         max_filmes_por_execucao=args.max_filmes,
     )
     logger.info("Ingestão do TMDb finalizada com sucesso: %s", resultado)
+
+
+def _cmd_ingest_bronze(args: argparse.Namespace) -> None:
+    """Executa a ingestão da camada bronze do Data Lake."""
+    from cinelake.datalake.bronze_ingest import ingerir_bronze
+
+    logger = logging.getLogger(__name__)
+    logger.info("Iniciando ingestão bronze...")
+    resultado = ingerir_bronze(args.movielens_dir, args.tmdb_dir)
+    logger.info("Resultado: %s", resultado)
 
 
 # Ponto de entrada padrão para execução via módulo (ex: python -m cinelake)

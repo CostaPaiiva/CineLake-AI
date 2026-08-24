@@ -41,6 +41,9 @@ O PC local é usado apenas para PowerShell SSH, navegador e Power BI.
 cinelake-ai/
 ├── src/
 │   └── cinelake/
+│       ├── datalake/
+│       │   ├── bronze_ingest.py
+│       │   └── minio_client.py
 │       ├── ingestion/
 │       │   ├── movielens/
 │       │   └── tmdb/
@@ -77,6 +80,24 @@ python -m cinelake ingest-tmdb --output-dir data/raw/tmdb --max-filmes 10
 
 ---
 
+## Data Lake (MinIO + Parquet)
+
+Subir o MinIO:
+
+```bash
+docker compose up -d minio
+```
+Acessar console web: http://<IP_DA_VPS>:9001 (somente via túnel SSH ou localmente).
+
+Popular a camada bronze:
+
+```bash
+python -m cinelake ingest-datalake-bronze
+```
+Os arquivos Parquet ficam no bucket data-lake sob bronze/.
+
+---
+
 ## 8 — Explicação
 
 ### `TMDBClient`
@@ -104,6 +125,31 @@ python -m cinelake ingest-tmdb --output-dir data/raw/tmdb --max-filmes 10
 
 - Nova tabela `tmdb_ingestion_state` com uma única linha (id=1) para armazenar o watermark.
 
+### MinIO
+
+- Adicionado ao `docker-compose.yml` como serviço separado.
+- Exposto apenas em `127.0.0.1:9000` (API) e `127.0.0.1:9001` (console web), sem acesso externo direto.
+- Usa volume nomeado `minio_data` para persistência.
+- Healthcheck com `curl` para verificar se está vivo.
+
+### Cliente MinIO
+
+- Usa `boto3` com endpoint do MinIO e credenciais do `.env`.
+- `garantir_bucket()` cria o bucket se não existir.
+- `fazer_upload_parquet()` faz upload de arquivos locais para o bucket.
+
+### Ingestão Bronze
+
+- Converte CSVs do MovieLens para Parquet usando pandas/pyarrow.
+- Converte JSONs do TMDB (um arquivo por tipo) para Parquet.
+- Envia os arquivos para `bronze/` no MinIO.
+- Registra cada execução na tabela `ingestion_batch` com fonte `datalake_bronze`.
+
+### Separação de responsabilidades
+
+- `minio_client.py` lida com conexão e upload.
+- `bronze_ingest.py` orquestra a conversão e envio.
+
 ---
 
 ## 9 — Execução
@@ -114,8 +160,61 @@ Acesse [https://www.themoviedb.org/settings/api](https://www.themoviedb.org/sett
 
 ### 2. Adicionar chave ao `.env`
 
-Na VPS, edite o arquivo `.env`:
+Na VPS, edite o arquivo `.env` e adicione sua chave `TMDB_API_KEY`.
+
+### 3. Atualizar dependências
+
+Na VPS, com ambiente virtual ativo:
 
 ```bash
-nano .env
+pip install -e ".[dev]"
+```
+
+### 4. Subir o MinIO
+
+```bash
+docker compose up -d minio
+```
+
+Verifique o status do container:
+
+```bash
+docker compose ps
+```
+
+### 5. Acessar console web (opcional)
+
+No seu PC, se quiser acessar o console web do MinIO, crie um túnel SSH:
+
+No PC (PowerShell):
+
+```powershell
+ssh -L 9001:127.0.0.1:9001 <SEU_USUARIO>@<IP_DA_VPS>
+```
+
+Depois abra no navegador: http://127.0.0.1:9001.
+Use as credenciais do `.env` (`MINIO_ACCESS_KEY` e `MINIO_SECRET_KEY`).
+
+### 6. Popular camada bronze
+
+Na VPS, execute:
+
+```bash
+python -m cinelake ingest-datalake-bronze
+```
+
+### 7. Verificar arquivos no MinIO
+
+Via console web ou usando aws CLI (se instalado) com endpoint apontando para o MinIO.
+Ou, opcionalmente, use a biblioteca `boto3` no Python para listar objetos:
+
+```bash
+python -c "
+from cinelake.datalake.minio_client import criar_cliente_minio
+from cinelake.config import settings
+cliente = criar_cliente_minio()
+resposta = cliente.list_objects_v2(Bucket=settings.minio_bucket, Prefix='bronze/')
+for obj in resposta.get('Contents', []):
+    print(obj['Key'])
+"
 ```
