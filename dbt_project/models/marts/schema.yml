@@ -1,0 +1,83 @@
+﻿# ==============================================================================
+# marts/schema.yml
+# Documentação e Testes de Qualidade de Dados (Data Quality Tests) - Camada Marts
+# ==============================================================================
+version: 2
+
+models:
+  # ----------------------------------------------------------------------------
+  # Dimensão: dim_movie
+  # ----------------------------------------------------------------------------
+  - name: dim_movie
+    description: "Dimensão analítica de filmes com metadados e ano de lançamento"
+    columns:
+      - name: movie_id
+        description: "Chave primária única do filme"
+        tests:
+          - unique
+          - not_null
+      - name: title
+        description: "Título oficial do filme"
+        tests:
+          - not_null
+      - name: release_year
+        description: "Ano de lançamento extraído"
+        tests:
+          - not_null
+
+  # ----------------------------------------------------------------------------
+  # Dimensão: dim_user
+  # ----------------------------------------------------------------------------
+  - name: dim_user
+    description: "Dimensão de usuários ativos na plataforma"
+    columns:
+      - name: user_id
+        description: "Chave primária única do usuário"
+        tests:
+          - unique
+          - not_null
+
+  # ----------------------------------------------------------------------------
+  # Dimensão: dim_date
+  # ----------------------------------------------------------------------------
+  - name: dim_date
+    description: "Dimensão calendário/datas para agrupamento e filtros temporais"
+    columns:
+      - name: date_id
+        description: "Chave primária representando a data (YYYY-MM-DD)"
+        tests:
+          - unique
+          - not_null
+
+  # ----------------------------------------------------------------------------
+  # Tabela Fato: fact_rating
+  # ----------------------------------------------------------------------------
+  - name: fact_rating
+    description: "Tabela fato central contendo os eventos de avaliação dos filmes"
+    columns:
+      - name: user_id
+        description: "Chave estrangeira referenciando dim_user"
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_user')
+              field: user_id
+      - name: movie_id
+        description: "Chave estrangeira referenciando dim_movie"
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_movie')
+              field: movie_id
+      - name: rating
+        description: "Nota numérica atribuída ao filme (escala de 0.5 a 5.0 com incrementos de 0.5)"
+        tests:
+          - not_null
+          - accepted_values:
+              values: [0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0]
+      - name: date_id
+        description: "Chave estrangeira referenciando dim_date"
+        tests:
+          - relationships:
+              to: ref('dim_date')
+              field: date_id
