@@ -1,0 +1,27 @@
+﻿# dbt_project.yml
+name: 'cinelake'
+version: '1.0.0'
+config-version: 2
+
+# Esta configuração define o diretório onde o dbt procura os modelos
+model-paths: ["models"]
+analysis-paths: ["analyses"]
+test-paths: ["tests"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+snapshot-paths: ["snapshots"]
+
+target-path: "target"
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+# Configurações globais para modelos
+models:
+  cinelake:
+    staging:
+      +materialized: view
+      +schema: staging
+    marts:
+      +materialized: table
+      +schema: marts

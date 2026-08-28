@@ -1,0 +1,53 @@
+﻿version: 2
+
+sources:
+  - name: raw
+    schema: public
+    tables:
+      - name: movies
+        description: "Tabela bruta de filmes do MovieLens"
+        columns:
+          - name: movie_id
+            description: "ID do filme (chave primária)"
+            tests:
+              - unique
+              - not_null
+          - name: title
+            description: "Título do filme com ano"
+            tests:
+              - not_null
+          - name: genres
+            description: "Gêneros separados por |"
+            tests:
+              - not_null
+      - name: ratings
+        description: "Tabela bruta de avaliações"
+        columns:
+          - name: user_id
+            description: "ID do usuário"
+            tests:
+              - not_null
+          - name: movie_id
+            description: "ID do filme"
+            tests:
+              - not_null
+              - relationships:
+                  to: ref('stg_movies')
+                  field: movie_id
+          - name: rating
+            description: "Nota (0.5 a 5.0)"
+            tests:
+              - not_null
+          - name: ts
+            description: "Timestamp Unix"
+            tests:
+              - not_null
+      - name: links
+        description: "Links externos dos filmes"
+        columns:
+          - name: movie_id
+            tests:
+              - unique
+              - not_null
+      - name: tags
+        description: "Tags dos usuários"
