@@ -1,13 +1,16 @@
-﻿# profiles.yml
+﻿# ==============================================================================
+# profiles.yml - Perfil de Conexão com o Banco de Dados (PostgreSQL)
+# ==============================================================================
 cinelake:
-  target: dev
+  target: dev # Ambiente padrão de execução
   outputs:
     dev:
       type: postgres
       host: 127.0.0.1
       port: 5432
+      # Credenciais obtidas de forma segura através de variáveis de ambiente
       user: "{{ env_var('POSTGRES_USER') }}"
       password: "{{ env_var('POSTGRES_PASSWORD') }}"
       dbname: "{{ env_var('POSTGRES_DB') }}"
       schema: public
-      threads: 4
+      threads: 4 # Quantidade de queries executadas em paralelo pelo dbt

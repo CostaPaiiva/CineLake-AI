@@ -12,15 +12,15 @@ authors = [
     { name = "Seu Nome", email = "seu-email@example.com" }
 ]
 dependencies = [
-    "python-dotenv>=1.0.0",
-    "sqlalchemy>=2.0",
-    "psycopg[binary]>=3.1",
-    "alembic>=1.13",
-    "boto3>=1.34",
-    "pyarrow>=15.0",
-    "pandas>=2.0",
-    "dbt-core>=1.8",
-    "dbt-postgres>=1.8",
+    "python-dotenv>=1.0.0",  # Gerenciamento de variáveis de ambiente (.env)
+    "sqlalchemy>=2.0",       # ORM e abstração de banco de dados SQL
+    "psycopg[binary]>=3.1",  # Driver PostgreSQL de alta performance (psycopg3)
+    "alembic>=1.13",         # Controle de versões e migrações do schema do banco
+    "boto3>=1.34",           # SDK AWS para interação com S3 / Lakehouse
+    "pyarrow>=15.0",         # Processamento e manipulação de arquivos Parquet em memória
+    "pandas>=2.0",           # Manipulação e análise tabular de dados
+    "dbt-core>=1.8",         # Motor de transformação de dados e modelagem analítica
+    "dbt-postgres>=1.8",     # Adaptador dbt para bancos de dados PostgreSQL
 ]
 
 [project.optional-dependencies]

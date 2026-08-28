@@ -1,53 +1,73 @@
-﻿version: 2
+﻿# ==============================================================================
+# schema.yml - Documentação de Fontes e Testes de Qualidade da Camada Staging
+# ==============================================================================
+version: 2
 
 sources:
   - name: raw
     schema: public
+    description: "Camada de dados brutos carregados no banco PostgreSQL"
     tables:
+      # ------------------------------------------------------------------------
+      # Tabela: movies
+      # ------------------------------------------------------------------------
       - name: movies
         description: "Tabela bruta de filmes do MovieLens"
         columns:
           - name: movie_id
-            description: "ID do filme (chave primária)"
+            description: "ID único do filme (chave primária)"
             tests:
               - unique
               - not_null
           - name: title
-            description: "Título do filme com ano"
+            description: "Título do filme incluindo o ano de lançamento"
             tests:
               - not_null
           - name: genres
-            description: "Gêneros separados por |"
+            description: "Lista de gêneros separados por pipe (|)"
             tests:
               - not_null
+
+      # ------------------------------------------------------------------------
+      # Tabela: ratings
+      # ------------------------------------------------------------------------
       - name: ratings
-        description: "Tabela bruta de avaliações"
+        description: "Tabela bruta de avaliações feitas pelos usuários"
         columns:
           - name: user_id
-            description: "ID do usuário"
+            description: "ID do usuário que realizou a avaliação"
             tests:
               - not_null
           - name: movie_id
-            description: "ID do filme"
+            description: "ID do filme avaliado"
             tests:
               - not_null
               - relationships:
                   to: ref('stg_movies')
                   field: movie_id
           - name: rating
-            description: "Nota (0.5 a 5.0)"
+            description: "Nota atribuída ao filme (escala de 0.5 a 5.0)"
             tests:
               - not_null
           - name: ts
-            description: "Timestamp Unix"
+            description: "Timestamp Unix da data/hora da avaliação"
             tests:
               - not_null
+
+      # ------------------------------------------------------------------------
+      # Tabela: links
+      # ------------------------------------------------------------------------
       - name: links
-        description: "Links externos dos filmes"
+        description: "Identificadores externos dos filmes (IMDb, TMDb)"
         columns:
           - name: movie_id
+            description: "ID do filme referenciado"
             tests:
               - unique
               - not_null
+
+      # ------------------------------------------------------------------------
+      # Tabela: tags
+      # ------------------------------------------------------------------------
       - name: tags
-        description: "Tags dos usuários"
+        description: "Palavras-chave e tags atribuídas aos filmes pelos usuários"
