@@ -24,6 +24,8 @@ dependencies = [
     "great_expectations>=0.18",  # Framework de validação, testes e contratos de qualidade de dados
     "prometheus_client>=0.18",   # Cliente para exportação e coleta de métricas de observabilidade
     "python-json-logger>=2.0",   # Formatação de logs da aplicação em estrutura JSON
+    "fastapi>=0.110",            # Framework web assíncrono para construção de APIs REST de alta performance
+    "uvicorn>=0.27",             # Servidor de aplicação ASGI de alta velocidade para Python
 ]
 
 [project.optional-dependencies]
