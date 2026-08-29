@@ -286,6 +286,32 @@ curl http://127.0.0.1:8000/health
 
 ---
 
+## MCP Server (Model Context Protocol)
+
+O CineLake AI expõe um MCP Server com ferramentas read-only para consultar a plataforma.
+
+### Ferramentas disponíveis
+
+- `get_platform_health` – status geral da plataforma.
+- `get_pipeline_status` – status dos pipelines.
+- `list_failed_pipelines` – lista execuções que falharam.
+- `get_pipeline_run` – detalhes de uma execução.
+- `get_data_freshness` – frescura dos dados por fonte.
+- `get_data_quality_failures` – falhas de qualidade.
+- `get_table_schema` – esquema de tabela.
+- `get_table_lineage` – linhagem simplificada.
+
+### Executar
+
+```bash
+python -m cinelake.mcp_server.server
+```
+
+#### Testar com cliente
+Use um cliente MCP (ex.: `mcp` CLI) para conectar ao servidor via `stdio`.
+
+---
+
 ## 8 — Explicação
 
 ### `health.py`
@@ -304,6 +330,27 @@ curl http://127.0.0.1:8000/health
 
 - `serve-observability` inicia o servidor Uvicorn para expor a API.
 
+### MCP Server
+
+- Usamos o **MCP Python SDK** para criar um servidor com ferramentas declarativas.
+- Cada ferramenta é registrada com `@server.tool("nome")` e possui uma docstring que descreve sua função.
+- As ferramentas são read-only (somente consultas).
+
+### Organização
+
+- `tools/health_tools.py`: saúde e freshness.
+- `tools/pipeline_tools.py`: status e histórico de pipelines.
+- `tools/quality_tools.py`: falhas de qualidade (simplificado).
+- `tools/schema_tools.py`: esquema e linhagem.
+
+### Linhagem
+
+- Usamos um dicionário `LINHAGEM` com mapeamento simplificado. Futuramente, geraremos isso automaticamente do dbt manifest.
+
+### stdio
+
+- O servidor roda via `stdio_server()`, permitindo integração com clientes MCP locais.
+
 ---
 
 ## 9 — Execução
@@ -312,4 +359,32 @@ curl http://127.0.0.1:8000/health
 
 ```bash
 pip install -e ".[dev]"
+```
+
+### 2. Executar o MCP Server
+
+```bash
+python -m cinelake.mcp_server.server
+```
+
+Isso iniciará o servidor e aguardará requisições via `stdio`.
+
+Para testar, você pode usar um cliente MCP como `mcp` CLI ou escrever um script de teste simples.
+
+### 3. Testar ferramentas manualmente (opcional)
+
+Crie um script Python para invocar as ferramentas diretamente:
+
+```python
+import asyncio
+from cinelake.mcp_server.server import criar_servidor
+
+async def testar():
+    servidor = criar_servidor()
+    # Simular chamada da ferramenta
+    # (depende da implementação do SDK; pode ser complexo)
+    # Aqui apenas mostramos que o servidor pode ser criado sem erros.
+    print("Servidor criado com sucesso")
+
+asyncio.run(testar())
 ```
