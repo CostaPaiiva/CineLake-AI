@@ -1,0 +1,274 @@
+<div align="center">
+
+# CineLake AI
+
+### Plataforma de engenharia de dados para o domínio cinematográfico
+
+_Ingestão confiável, Data Lake em camadas, qualidade de dados, modelagem analítica e interfaces para agentes de IA._
+
+[Visão geral](#visão-geral) · [Início rápido](#início-rápido) · [Arquitetura](#arquitetura) · [Operação](#operação) · [Documentação](#documentação)
+
+</div>
+
+---
+
+## Visão geral
+
+O **CineLake AI** é um projeto de portfólio que constrói uma plataforma de dados end-to-end usando o catálogo do [MovieLens](https://grouplens.org/datasets/movielens/) e metadados do [TMDb](https://www.themoviedb.org/). O foco é demonstrar decisões de engenharia aplicáveis a um ambiente de produção: pipelines idempotentes, rastreabilidade de execuções, armazenamento em camadas, contratos de dados, modelo dimensional e observabilidade.
+
+O ambiente-alvo é uma VPS Ubuntu. Os serviços de infraestrutura ficam isolados em Docker e suas portas são vinculadas a `127.0.0.1`; o acesso remoto é feito por túnel SSH.
+
+> Estado atual: fundação de dados implementada — PostgreSQL, ingestões MovieLens/TMDb, camada Bronze no MinIO, dbt, Great Expectations, API de observabilidade, métricas Prometheus e servidor MCP somente leitura.
+
+## Arquitetura
+
+```mermaid
+flowchart LR
+    ML[MovieLens CSV] --> ING[Ingestão Python]
+    TMDB[TMDb API] --> ING
+    ING --> PG[(PostgreSQL)]
+    ING --> RAW[JSON bruto]
+    ML --> BRONZE[Bronze · Parquet]
+    RAW --> BRONZE
+    BRONZE --> MINIO[(MinIO / S3)]
+    PG --> DBT[dbt]
+    DBT --> MARTS[Staging e Marts]
+    PG --> GE[Great Expectations]
+    PG --> OBS[API de observabilidade]
+    OBS --> MCP[MCP Server]
+    EXP[Exporter Prometheus] --> PROM[Prometheus]
+    PROM --> GRAF[Grafana]
+```
+
+| Camada | Implementação atual |
+| --- | --- |
+| Fontes | MovieLens e TMDb |
+| Ingestão | CLI Python, auditoria em `ingestion_batch` e reexecução idempotente |
+| Persistência operacional | PostgreSQL 16 + Alembic |
+| Data Lake | MinIO compatível com S3, dados Bronze em Parquet |
+| Transformação | dbt: staging e marts com esquema dimensional |
+| Qualidade | Contrato de `ratings` e validação com Great Expectations |
+| Observabilidade | API FastAPI, exporter Prometheus, Prometheus e Grafana |
+| IA agêntica | Servidor MCP via `stdio`, com ferramentas de consulta somente leitura |
+
+## Principais capacidades
+
+- Ingestão do MovieLens no PostgreSQL com `ON CONFLICT`: filmes e links são atualizados; ratings e tags não são duplicados.
+- Ingestão incremental do TMDb com watermark persistido, limite de taxa, timeout e retentativas com backoff exponencial.
+- Auditoria de cada execução com status, timestamps, volume processado e mensagem de erro.
+- Conversão de CSV e JSON para Parquet e publicação na camada Bronze do MinIO.
+- Modelos dbt para dimensões `dim_date`, `dim_movie`, `dim_user` e fato `fact_rating`.
+- Contrato de dados para ratings — campos obrigatórios e faixa de nota entre `0.5` e `5.0`.
+- Endpoints de saúde e freshness; métricas de pipeline compatíveis com Prometheus.
+- Ferramentas MCP para saúde, execução de pipelines, qualidade, esquema e linhagem simplificada.
+
+## Stack
+
+`Python` · `PostgreSQL` · `Docker Compose` · `MinIO` · `Apache Parquet` · `SQLAlchemy` · `Alembic` · `dbt` · `Great Expectations` · `FastAPI` · `Prometheus` · `Grafana` · `Model Context Protocol`
+
+## Pré-requisitos
+
+- Python 3.10 ou superior
+- Docker Engine com Docker Compose v2
+- PostgreSQL, MinIO, Prometheus e Grafana são iniciados pelo Compose
+- Uma chave de API do TMDb para a ingestão de metadados
+
+## Início rápido
+
+### 1. Preparar o ambiente
+
+```bash
+git clone <URL_DO_REPOSITORIO>
+cd CineLake-AI
+
+python -m venv .venv
+source .venv/bin/activate        # Linux/macOS
+# .venv\Scripts\Activate.ps1     # Windows PowerShell
+
+python -m pip install --upgrade pip
+python -m pip install -e ".[dev]"
+cp .env.example .env
+```
+
+No Windows PowerShell, use `Copy-Item .env.example .env` em vez de `cp` caso necessário.
+
+### 2. Configurar variáveis de ambiente
+
+Edite o arquivo `.env`. Para uso local, os valores de `POSTGRES_HOST` e `MINIO_ENDPOINT` já apontam para `127.0.0.1`. Antes de executar a ingestão TMDb, defina uma chave válida:
+
+```dotenv
+TMDB_API_KEY=sua_chave_do_tmdb
+```
+
+Nunca envie o `.env` ao repositório. Ele contém credenciais e já está ignorado pelo Git.
+
+### 3. Iniciar a infraestrutura e criar o schema
+
+```bash
+docker compose up -d
+docker compose ps
+
+alembic upgrade head
+python -m cinelake check-db
+```
+
+### 4. Baixar e ingerir o MovieLens
+
+```bash
+mkdir -p data/raw/movielens
+curl -L -o data/raw/movielens/ml-latest-small.zip \
+  https://files.grouplens.org/datasets/movielens/ml-latest-small.zip
+unzip data/raw/movielens/ml-latest-small.zip -d data/raw/movielens
+
+python -m cinelake ingest-movielens
+```
+
+### 5. Enriquecer com TMDb e publicar a camada Bronze
+
+```bash
+# Teste com um lote pequeno
+python -m cinelake ingest-tmdb --max-filmes 10
+
+# Gera Parquet e envia para s3://data-lake/bronze/
+python -m cinelake ingest-datalake-bronze
+```
+
+> A ingestão do TMDb depende de `links.tmdb_id`, preenchido pela ingestão anterior do MovieLens. O watermark permite continuar de onde a execução anterior parou.
+
+### 6. Construir a camada analítica
+
+```bash
+cd dbt_project
+dbt debug
+dbt run
+dbt test
+```
+
+## Comandos da CLI
+
+| Comando | Finalidade |
+| --- | --- |
+| `python -m cinelake check-db` | Verifica a conexão com PostgreSQL |
+| `python -m cinelake ingest-movielens [--data-dir CAMINHO]` | Carrega os CSVs do MovieLens de forma idempotente |
+| `python -m cinelake ingest-tmdb [--max-filmes N]` | Busca metadados incrementais no TMDb |
+| `python -m cinelake ingest-datalake-bronze` | Converte dados brutos em Parquet e os envia ao MinIO |
+| `python -m cinelake serve-observability` | Inicia a API FastAPI de observabilidade |
+| `python -m cinelake run-metrics-exporter` | Inicia o endpoint Prometheus na porta 8000 |
+
+## Operação
+
+### Observabilidade
+
+Há dois processos distintos que podem usar a porta `8000`. Execute **apenas um por vez**.
+
+#### API de observabilidade
+
+```bash
+python -m cinelake serve-observability --host 127.0.0.1 --port 8000
+curl http://127.0.0.1:8000/health
+curl http://127.0.0.1:8000/metrics
+curl http://127.0.0.1:8000/freshness
+```
+
+Os endpoints retornam JSON com conectividade, contagens de tabelas e freshness das fontes.
+
+#### Exporter Prometheus
+
+```bash
+python -m cinelake run-metrics-exporter --port 8000
+curl http://127.0.0.1:8000/metrics
+```
+
+Neste modo, `/metrics` retorna o formato de texto do Prometheus. O serviço `prometheus` do Compose coleta `host.docker.internal:8000`; portanto, o exporter precisa permanecer em execução na VPS. O Compose não inicializa esse processo Python automaticamente.
+
+Prometheus e Grafana ficam disponíveis somente no host:
+
+| Serviço | Porta na VPS | Acesso recomendado |
+| --- | --- | --- |
+| Grafana | `127.0.0.1:3000` | Túnel SSH |
+| Prometheus | `127.0.0.1:9090` | Túnel SSH |
+| MinIO Console | `127.0.0.1:9001` | Túnel SSH |
+
+Exemplo de túnel para o Grafana:
+
+```bash
+ssh -L 3000:127.0.0.1:3000 <USUARIO>@<IP_DA_VPS>
+```
+
+Depois, abra `http://127.0.0.1:3000` no navegador local.
+
+### Qualidade de dados
+
+O contrato de `ratings` é definido em `src/cinelake/data_quality/data_contracts/ratings_contract.py`. A primeira configuração cria o datasource e a suíte de expectativas; em seguida, a validação consulta até mil registros de `ratings`.
+
+```bash
+python -c "from cinelake.data_quality.setup import configurar_ge; from cinelake.data_quality.validate import criar_data_context; configurar_ge(criar_data_context())"
+python -c "from cinelake.data_quality.validate import validar_ratings; print(validar_ratings())"
+```
+
+Também existe a DAG `run_data_quality`, preparada para executar a validação diariamente em uma instalação externa do Apache Airflow.
+
+### MCP Server
+
+O servidor MCP opera por `stdio` e expõe ferramentas somente leitura para que um cliente compatível consulte o estado da plataforma:
+
+- Saúde e freshness dos dados
+- Histórico e detalhes de pipelines
+- Falhas de qualidade
+- Esquema e linhagem simplificada
+
+```bash
+python -m cinelake.mcp_server.server
+```
+
+## Testes e qualidade de código
+
+```bash
+# Testes unitários e de integração (requerem infraestrutura ativa para os marcados como integration)
+pytest
+
+# Apenas testes unitários
+pytest -m "not integration"
+
+ruff check .
+ruff format --check .
+mypy src
+```
+
+## Estrutura do repositório
+
+```text
+.
+├── airflow/                 # DAGs de orquestração
+├── alembic/                 # Migrações do PostgreSQL
+├── dbt_project/             # Modelos staging e marts
+├── docs/                    # Guia operacional e ADRs
+├── infrastructure/          # Configuração de Prometheus e Grafana
+├── src/cinelake/
+│   ├── ingestion/           # MovieLens e TMDb
+│   ├── datalake/            # Bronze e cliente MinIO
+│   ├── data_quality/        # Contratos e Great Expectations
+│   ├── observability/       # API, health e métricas
+│   └── mcp_server/          # Servidor e ferramentas MCP
+└── tests/                   # Testes unitários e de integração
+```
+
+## Documentação
+
+- [Guia operacional](docs/GUIA_OPERACIONAL.md)
+- [ADR-001 — Desenvolvimento em VPS remota](docs/adr/ADR-001-remote-vps-development.md)
+- [ADR-002 — RAG e MCP como camada de IA](docs/adr/ADR-002-rag-mcp-as-ai-layer.md)
+- [ADR-003 — Infraestrutura PostgreSQL em Docker](docs/adr/ADR-003-docker-postgresql-infra.md)
+- [ADR-004 — Ingestão idempotente](docs/adr/ADR-004-ingestion-pipeline-idempotency.md)
+
+## Próximos passos
+
+- Containerizar e supervisionar os processos da aplicação, incluindo o exporter Prometheus.
+- Evoluir a orquestração do Airflow para os pipelines de ingestão e transformação.
+- Adicionar CI, cobertura de testes e publicação de imagens.
+- Implementar as camadas Silver/Gold e um fluxo de recomendação/MLOps.
+- Gerar linhagem automaticamente a partir dos artefatos do dbt.
+
+## Licença
+
+Ainda não há uma licença declarada para o projeto. Antes de receber contribuições externas ou distribuir o código, adicione um arquivo `LICENSE` com a licença escolhida.
