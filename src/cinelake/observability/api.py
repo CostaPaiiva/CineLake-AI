@@ -43,7 +43,9 @@ def freshness() -> dict[str, Any]:
     """Retorna apenas os indicadores de atualidade/frescor das fontes de dados em minutos."""
     try:
         status = coletar_status_geral()
-        return status.get("fontes", {})
+        fontes = status.get("fontes", {})
+        return dict(fontes) if isinstance(fontes, dict) else {}
     except Exception as exc:
         logger.exception("Erro ao coletar freshness")
         raise HTTPException(status_code=500, detail=str(exc)) from exc
+

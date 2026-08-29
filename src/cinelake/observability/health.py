@@ -2,6 +2,7 @@
 
 import logging
 from datetime import datetime, timezone
+from typing import Any
 
 from sqlalchemy import text
 
@@ -39,18 +40,19 @@ def obter_contagens_tabelas() -> dict[str, int]:
         for tabela in tabelas:
             try:
                 resultado = conn.execute(text(f"SELECT COUNT(*) FROM {tabela}"))
-                contagens[tabela] = int(resultado.scalar())
+                val = resultado.scalar()
+                contagens[tabela] = int(val) if val is not None else -1
             except Exception as exc:
                 logger.warning("Erro ao contar registros da tabela %s: %s", tabela, exc)
                 contagens[tabela] = -1
     return contagens
 
 
-def obter_ultimas_execucoes() -> dict[str, dict]:
+def obter_ultimas_execucoes() -> dict[str, dict[str, Any]]:
     """Consulta a tabela `ingestion_batch` e retorna a última execução bem-sucedida de cada fonte de dados.
 
     Returns:
-        dict[str, dict]: Dicionário com timestamp ISO e frescor (freshness) em minutos de cada fonte.
+        dict[str, dict[str, Any]]: Dicionário com timestamp ISO e frescor em minutos de cada fonte.
     """
     engine = get_engine()
     query = text("""
@@ -59,7 +61,7 @@ def obter_ultimas_execucoes() -> dict[str, dict]:
         WHERE status = 'success'
         GROUP BY source
     """)
-    resultados = {}
+    resultados: dict[str, dict[str, Any]] = {}
     with engine.connect() as conn:
         linhas = conn.execute(query).fetchall()
         for linha in linhas:
@@ -88,11 +90,11 @@ def _calcular_freshness_minutos(timestamp: datetime | None) -> float | None:
     return round(delta.total_seconds() / 60, 2)
 
 
-def coletar_status_geral() -> dict:
+def coletar_status_geral() -> dict[str, Any]:
     """Coleta e consolida o status geral de saúde e métricas operacionais da plataforma CineLake AI.
 
     Returns:
-        dict: Dicionário contendo status ('ok' ou 'down'), timestamp, contagens e frescor das fontes.
+        dict[str, Any]: Dicionário contendo status, timestamp, contagens e frescor das fontes.
     """
     conexao_ok = verificar_conexao_postgres()
     if not conexao_ok:
@@ -107,3 +109,4 @@ def coletar_status_geral() -> dict:
         "contagens": contagens,
         "fontes": ultimas,
     }
+

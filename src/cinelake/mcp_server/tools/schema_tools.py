@@ -9,7 +9,7 @@ from cinelake.db import get_engine
 
 logger = logging.getLogger(__name__)
 
-# Mapeamento simplificado de linhagem de dados (dependências entre tabelas bronze, staging e marts dbt)
+# Mapeamento simplificado de linhagem de dados (dependências dbt)
 LINHAGEM: dict[str, list[str]] = {
     "dim_movie": ["stg_movies", "movies"],
     "dim_user": ["stg_ratings", "ratings"],
@@ -26,9 +26,9 @@ def registrar_ferramentas(server: Server) -> None:
         server: Instância do servidor MCP onde as ferramentas serão registradas.
     """
 
-    @server.tool("get_table_schema")
+    @server.tool("get_table_schema")  # type: ignore [misc]
     async def get_table_schema(tabela: str) -> str:
-        """Retorna o esquema (nomes das colunas e tipos de dados) de uma tabela do banco de dados."""
+        """Retorna o esquema (colunas e tipos) de uma tabela do banco de dados."""
         engine = get_engine()
         try:
             with engine.connect() as conn:
@@ -43,7 +43,7 @@ def registrar_ferramentas(server: Server) -> None:
             logger.error("Erro ao obter esquema da tabela %s: %s", tabela, exc)
             return f"Erro: {exc}"
 
-    @server.tool("get_table_lineage")
+    @server.tool("get_table_lineage")  # type: ignore [misc]
     async def get_table_lineage(tabela: str) -> str:
         """Retorna a linhagem e as dependências upstream de dados de uma determinada tabela."""
         linhagem = LINHAGEM.get(tabela)

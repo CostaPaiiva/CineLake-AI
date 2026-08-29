@@ -16,14 +16,14 @@ def registrar_ferramentas(server: Server) -> None:
         server: Instância do servidor MCP onde as ferramentas serão registradas.
     """
 
-    @server.tool("get_platform_health")
+    @server.tool("get_platform_health")  # type: ignore [misc]
     async def get_platform_health() -> str:
-        """Retorna o status geral de saúde da plataforma CineLake AI (conectividade, contagem de tabelas e fontes)."""
+        """Retorna o status geral de saúde da plataforma (conectividade e contagens)."""
         status = coletar_status_geral()
         return str(status)
 
-    @server.tool("get_data_freshness")
+    @server.tool("get_data_freshness")  # type: ignore [misc]
     async def get_data_freshness() -> str:
-        """Retorna os indicadores de frescura (freshness) dos dados por fonte de ingestão em minutos."""
+        """Retorna a frescura (freshness) dos dados por fonte de ingestão em minutos."""
         freshness = obter_ultimas_execucoes()
         return str(freshness)

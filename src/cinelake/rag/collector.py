@@ -6,6 +6,7 @@ normaliza e salva em data/rag/documents/.
 
 import logging
 from pathlib import Path
+from typing import Any
 
 from sqlalchemy import text
 
@@ -15,14 +16,14 @@ from cinelake.rag.normalizer import criar_documento, salvar_documentos
 logger = logging.getLogger(__name__)
 
 
-def coletar_adrs(diretorio_docs: Path) -> list[dict]:
+def coletar_adrs(diretorio_docs: Path) -> list[dict[str, Any]]:
     """Coleta todos os registros de decisão de arquitetura (ADRs) em docs/adr/*.md.
 
     Args:
         diretorio_docs: Caminho base da pasta de documentação (docs/).
 
     Returns:
-        list[dict]: Lista de documentos normalizados do tipo ADR.
+        list[dict[str, Any]]: Lista de documentos normalizados do tipo ADR.
     """
     documentos = []
     diretorio_adr = diretorio_docs / "adr"
@@ -40,14 +41,14 @@ def coletar_adrs(diretorio_docs: Path) -> list[dict]:
     return documentos
 
 
-def coletar_runbooks(diretorio_docs: Path) -> list[dict]:
+def coletar_runbooks(diretorio_docs: Path) -> list[dict[str, Any]]:
     """Coleta os runbooks operacionais localizados em docs/runbooks/*.md.
 
     Args:
         diretorio_docs: Caminho base da pasta de documentação (docs/).
 
     Returns:
-        list[dict]: Lista de documentos normalizados contendo procedimentos operacionais.
+        list[dict[str, Any]]: Lista de documentos normalizados contendo procedimentos operacionais.
     """
     documentos = []
     diretorio_run = diretorio_docs / "runbooks"
@@ -65,14 +66,14 @@ def coletar_runbooks(diretorio_docs: Path) -> list[dict]:
     return documentos
 
 
-def coletar_modelos_dbt(diretorio_dbt: Path) -> list[dict]:
+def coletar_modelos_dbt(diretorio_dbt: Path) -> list[dict[str, Any]]:
     """Coleta as definições de modelos dbt (consultas SQL e arquivos de esquema YAML).
 
     Args:
         diretorio_dbt: Caminho base do projeto dbt (dbt_project/).
 
     Returns:
-        list[dict]: Lista de documentos normalizados dos modelos e schemas dbt.
+        list[dict[str, Any]]: Lista de documentos normalizados dos modelos e schemas dbt.
     """
     documentos = []
     diretorio_modelos = diretorio_dbt / "models"
@@ -100,14 +101,14 @@ def coletar_modelos_dbt(diretorio_dbt: Path) -> list[dict]:
     return documentos
 
 
-def coletar_contratos(diretorio_contratos: Path) -> list[dict]:
+def coletar_contratos(diretorio_contratos: Path) -> list[dict[str, Any]]:
     """Coleta as regras e especificações dos contratos de dados definidos no código Python.
 
     Args:
         diretorio_contratos: Caminho da pasta de contratos de qualidade de dados.
 
     Returns:
-        list[dict]: Lista de documentos normalizados de contratos de dados.
+        list[dict[str, Any]]: Lista de documentos normalizados de contratos de dados.
     """
     documentos = []
     if diretorio_contratos.exists():
@@ -124,11 +125,11 @@ def coletar_contratos(diretorio_contratos: Path) -> list[dict]:
     return documentos
 
 
-def coletar_schema_tabelas() -> list[dict]:
-    """Coleta em tempo de execução os esquemas e definições de colunas de todas as tabelas do PostgreSQL.
+def coletar_schema_tabelas() -> list[dict[str, Any]]:
+    """Coleta em tempo de execução os esquemas e definições de colunas das tabelas do PostgreSQL.
 
     Returns:
-        list[dict]: Lista de documentos normalizados contendo a estrutura de cada tabela.
+        list[dict[str, Any]]: Lista de documentos normalizados contendo a estrutura de cada tabela.
     """
     engine = get_engine()
     documentos = []
@@ -167,11 +168,11 @@ def coletar_schema_tabelas() -> list[dict]:
     return documentos
 
 
-def coletar_ultimas_execucoes() -> list[dict]:
-    """Coleta o histórico das últimas 20 execuções de pipelines registradas para contextualização operacional.
+def coletar_ultimas_execucoes() -> list[dict[str, Any]]:
+    """Coleta o histórico das últimas 20 execuções de pipelines registradas na plataforma.
 
     Returns:
-        list[dict]: Lista de documentos normalizados de execuções de pipeline.
+        list[dict[str, Any]]: Lista de documentos normalizados de execuções de pipeline.
     """
     engine = get_engine()
     documentos = []
@@ -202,18 +203,18 @@ def coletar_ultimas_execucoes() -> list[dict]:
     return documentos
 
 
-def coletar_documentos_rag(diretorio_saida: Path) -> dict:
-    """Orquestra a coleta completa de todas as fontes de contexto (ADRs, Runbooks, dbt, Contratos, Schemas e Histórico).
+def coletar_documentos_rag(diretorio_saida: Path) -> dict[str, Any]:
+    """Orquestra a coleta completa de todas as fontes de contexto para o RAG.
 
     Args:
         diretorio_saida: Pasta onde os documentos JSON normalizados serão salvos.
 
     Returns:
-        dict: Dicionário contendo o total de documentos coletados e salvos.
+        dict[str, Any]: Dicionário contendo o total de documentos coletados e salvos.
     """
     logger.info("Iniciando coleta de documentos RAG")
 
-    # Localiza a raiz do repositório a partir da posição relativa deste arquivo (src/cinelake/rag/collector.py)
+    # Localiza a raiz do repositório a partir da posição deste arquivo (src/cinelake/rag/collector.py)
     raiz = Path(__file__).resolve().parents[3]
 
     documentos = []
@@ -229,3 +230,4 @@ def coletar_documentos_rag(diretorio_saida: Path) -> dict:
 
     logger.info("Coleta concluída. Total de documentos: %d", len(documentos))
     return {"total_documentos": len(documentos)}
+

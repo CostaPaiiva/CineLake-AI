@@ -17,9 +17,9 @@ def registrar_ferramentas(server: Server) -> None:
         server: Instância do servidor MCP onde as ferramentas serão registradas.
     """
 
-    @server.tool("get_data_quality_failures")
+    @server.tool("get_data_quality_failures")  # type: ignore [misc]
     async def get_data_quality_failures(limit: int = 10) -> str:
-        """Retorna falhas de validação de qualidade de dados (baseado em checkpoints do Great Expectations ou registros de falhas)."""
+        """Retorna falhas de validação de qualidade de dados registradas."""
         # Consulta os registros de falha na ingestão para identificar problemas de qualidade
         engine = get_engine()
         with engine.connect() as conn:

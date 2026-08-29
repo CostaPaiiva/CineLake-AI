@@ -16,10 +16,10 @@ logger = logging.getLogger(__name__)
 
 
 def criar_servidor() -> Server:
-    """Cria e inicializa o servidor MCP integrando todos os conjuntos de ferramentas (tools) da plataforma.
+    """Cria e inicializa o servidor MCP integrando os conjuntos de ferramentas da plataforma.
 
     Returns:
-        Server: Instância configurada do servidor MCP com os módulos de saúde, pipelines, qualidade e esquemas.
+        Server: Instância do servidor MCP com saúde, pipelines, qualidade e esquemas.
     """
     app = Server("cinelake-mcp")
 
@@ -33,7 +33,7 @@ def criar_servidor() -> Server:
 
 
 async def executar_servidor() -> None:
-    """Executa o loop de eventos assíncrono do servidor MCP utilizando o transporte via stdio (estrada/saída padrão)."""
+    """Executa o loop de eventos assíncrono do servidor MCP utilizando o transporte via stdio."""
     app = criar_servidor()
     async with stdio_server() as (read_stream, write_stream):
         await app.run(

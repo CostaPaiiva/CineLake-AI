@@ -17,11 +17,14 @@ def registrar_ferramentas(server: Server) -> None:
         server: Instância do servidor MCP onde as ferramentas serão registradas.
     """
 
-    @server.tool("get_pipeline_status")
+    @server.tool("get_pipeline_status")  # type: ignore [misc]
     async def get_pipeline_status(source: str | None = None) -> str:
         """Retorna o histórico de execuções de pipelines, com filtro opcional por fonte de dados."""
         engine = get_engine()
-        query = "SELECT batch_id, source, status, started_at, finished_at, rows_processed, rows_inserted FROM ingestion_batch"
+        query = (
+            "SELECT batch_id, source, status, started_at, finished_at, rows_processed, rows_inserted "
+            "FROM ingestion_batch"
+        )
         params = {}
         if source:
             query += " WHERE source = :source"
@@ -45,7 +48,7 @@ def registrar_ferramentas(server: Server) -> None:
                 )
         return str(resultados)
 
-    @server.tool("list_failed_pipelines")
+    @server.tool("list_failed_pipelines")  # type: ignore [misc]
     async def list_failed_pipelines(limit: int = 10) -> str:
         """Lista as últimas execuções de pipeline que terminaram com status de falha/erro."""
         engine = get_engine()
@@ -76,9 +79,9 @@ def registrar_ferramentas(server: Server) -> None:
                 )
         return str(resultados)
 
-    @server.tool("get_pipeline_run")
+    @server.tool("get_pipeline_run")  # type: ignore [misc]
     async def get_pipeline_run(batch_id: int) -> str:
-        """Retorna os detalhes completos de auditoria de uma execução específica pelo seu identificador batch_id."""
+        """Retorna os detalhes completos de auditoria de uma execução específica pelo batch_id."""
         engine = get_engine()
         with engine.connect() as conn:
             linha = conn.execute(
@@ -106,3 +109,4 @@ def registrar_ferramentas(server: Server) -> None:
                 "error_message": linha[8],
             }
         return str(resultado)
+

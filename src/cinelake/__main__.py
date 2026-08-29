@@ -157,6 +157,7 @@ def _cmd_ingest_bronze(args: argparse.Namespace) -> None:
 def _cmd_run_metrics_exporter(args: argparse.Namespace) -> None:
     """Inicia o servidor de exportação de métricas HTTP do Prometheus."""
     import time
+
     from prometheus_client import start_http_server
 
     logger = logging.getLogger(__name__)
@@ -171,6 +172,7 @@ def _cmd_run_metrics_exporter(args: argparse.Namespace) -> None:
 def _cmd_serve_obs(args: argparse.Namespace) -> None:
     """Inicia o servidor web ASGI Uvicorn executando a API FastAPI de observabilidade."""
     import uvicorn
+
     from cinelake.observability.api import app
 
     logger = logging.getLogger(__name__)

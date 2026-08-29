@@ -3,9 +3,10 @@
 import json
 import logging
 from pathlib import Path
+from typing import Any
 
 import pandas as pd
-from sqlalchemy import text
+from sqlalchemy import Connection, text
 
 from cinelake.config import settings
 from cinelake.datalake.minio_client import (
@@ -45,7 +46,7 @@ def _converter_jsons_para_parquet(diretorio: Path, arquivo_parquet: Path) -> Non
     df.to_parquet(arquivo_parquet, index=False, engine="pyarrow")
 
 
-def _registrar_batch(conn, fonte: str, status: str, rows_processed: int, error_message: str | None = None) -> int:
+def _registrar_batch(conn: Connection, fonte: str, status: str, rows_processed: int, error_message: str | None = None) -> int:
     """Insere o log de execução do lote (batch) de ingestão na tabela 'ingestion_batch' do PostgreSQL.
     
     Permite auditar quando a ingestão rodou, quantos dados processou e se houve falhas.
@@ -69,10 +70,10 @@ def _registrar_batch(conn, fonte: str, status: str, rows_processed: int, error_m
         },
     )
     batch_id = resultado.scalar()
-    return int(batch_id)
+    return int(batch_id) if batch_id is not None else -1
 
 
-def ingerir_bronze(diretorio_movielens: Path, diretorio_tmdb: Path) -> dict:
+def ingerir_bronze(diretorio_movielens: Path, diretorio_tmdb: Path) -> dict[str, Any]:
     """Orquestra a ingestão da camada Bronze.
     
     1. Converte dados brutos locais (CSV do MovieLens e JSON do TMDB) para Parquet.

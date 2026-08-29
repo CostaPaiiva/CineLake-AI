@@ -1,6 +1,7 @@
 """Métricas do pipeline expostas via Prometheus."""
 
 import time
+
 from prometheus_client import Counter, Gauge, Histogram
 
 # Métricas

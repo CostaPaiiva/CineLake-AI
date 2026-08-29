@@ -4,6 +4,7 @@
 """Funções para validar dados com Great Expectations."""
 
 import logging
+from typing import Any
 
 from great_expectations.core.batch import RuntimeBatchRequest
 from great_expectations.data_context import BaseDataContext
@@ -11,8 +12,6 @@ from great_expectations.data_context.types.base import (
     DataContextConfig,
     FilesystemStoreBackendDefaults,
 )
-
-from typing import Any
 
 # Configuração do logger do módulo
 logger = logging.getLogger(__name__)
