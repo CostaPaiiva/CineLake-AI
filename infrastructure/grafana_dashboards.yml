@@ -1,0 +1,20 @@
+# Versão da especificação de provisionamento do Grafana
+apiVersion: 1
+
+# Lista de provedores de dashboards no Grafana
+providers:
+    # Nome do provedor padrão de dashboards
+  - name: 'default'
+    # ID da organização no Grafana (1 é a organização padrão)
+    orgId: 1
+    # Pasta raiz onde os dashboards serão organizados na interface
+    folder: ''
+    # Tipo de fonte dos dashboards (carregamento a partir de arquivos locais)
+    type: file
+    # Permite a exclusão de dashboards pela interface caso necessário
+    disableDeletion: false
+    # Intervalo em segundos para buscar novos arquivos de dashboard na pasta
+    updateIntervalSeconds: 10
+    options:
+      # Caminho interno no container do Grafana onde os arquivos .json dos dashboards residem
+      path: /var/lib/grafana/dashboards

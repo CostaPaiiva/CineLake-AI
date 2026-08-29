@@ -76,6 +76,11 @@ def main() -> None:
     )
     parser_bronze.set_defaults(func=_cmd_ingest_bronze)
 
+    # 5. Subcomando: run-metrics-exporter (Inicia o servidor de métricas Prometheus)
+    parser_metrics = subparsers.add_parser("run-metrics-exporter", help="Inicia exporter de métricas Prometheus")
+    parser_metrics.add_argument("--port", type=int, default=8000, help="Porta do exporter")
+    parser_metrics.set_defaults(func=_cmd_run_metrics_exporter)
+
     # Processa os argumentos fornecidos pelo usuário no terminal
     args = parser.parse_args()
     # Executa a função vinculada ao subcomando escolhido
@@ -129,6 +134,22 @@ def _cmd_ingest_bronze(args: argparse.Namespace) -> None:
     logger.info("Resultado: %s", resultado)
 
 
+def _cmd_run_metrics_exporter(args: argparse.Namespace) -> None:
+    """Inicia o servidor de exportação de métricas HTTP do Prometheus."""
+    import time
+    from prometheus_client import start_http_server
+    from cinelake.observability.metrics import registrar_execucao_pipeline
+
+    logger = logging.getLogger(__name__)
+    # Inicializa o servidor HTTP interno na porta especificada (padrão 8000)
+    start_http_server(args.port)
+    logger.info("Exporter de métricas rodando na porta %s", args.port)
+    # Loop infinito mantendo o processo ativo para responder a raspagens (scrapes) do Prometheus
+    while True:
+        time.sleep(10)
+
+
 # Ponto de entrada padrão para execução via módulo (ex: python -m cinelake)
 if __name__ == "__main__":
     main()
+
