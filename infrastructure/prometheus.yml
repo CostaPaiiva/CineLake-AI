@@ -1,0 +1,14 @@
+# Configurações globais do Prometheus
+global:
+  scrape_interval: 15s      # Frequência de coleta de métricas nos alvos (targets)
+  evaluation_interval: 15s  # Frequência de avaliação de regras de alarme/alertas
+
+# Definição das fontes de métricas (alvos de scrape)
+scrape_configs:
+  # Job responsável por coletar métricas do exportador da aplicação CineLake
+  - job_name: 'cinelake-exporter'
+    static_configs:
+      # Endereço do exportador de métricas (rodando no host através da porta 8000)
+      - targets: ['host.docker.internal:8000']
+    # Como o exporter roda na VPS (fora do container), usamos host.docker.internal
+    # Alternativa: usar IP da VPS ou adicionar network extra.

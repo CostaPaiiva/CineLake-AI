@@ -87,6 +87,9 @@ services:
     # Exposição da porta 9090 apenas para o localhost
     ports:
       - "127.0.0.1:9090:9090"
+    # Permite resolver host.docker.internal para o IP do host (VPS) no Linux
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     # Rede de comunicação interna dos containers
     networks:
       - cinelake-network
