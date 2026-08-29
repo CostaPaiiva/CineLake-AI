@@ -152,6 +152,49 @@ Os arquivos Parquet ficam no bucket data-lake sob bronze/.
 
 ---
 
+## Qualidade de Dados (Great Expectations)
+
+Configurar GE:
+
+```bash
+python -c "from cinelake.data_quality.setup import configurar_ge; from cinelake.data_quality.validate import criar_data_context; ctx=criar_data_context(); configurar_ge(ctx)"
+```
+
+Validar ratings:
+
+```bash
+python -c "from cinelake.data_quality.validate import validar_ratings; print(validar_ratings())"
+```
+
+Os resultados HTML ficam em `great_expectations/uncommitted/data_docs/local_site/validations/`.
+
+---
+
+## 8 — Explicação
+
+### Great Expectations
+
+- **Data Context**: configuração central do GE, geralmente criada em `great_expectations/`.
+- **Datasource**: conexão com a fonte de dados (PostgreSQL).
+- **Expectation Suite**: coleção de expectativas.
+- **Checkpoint**: executa a validação e gera resultados.
+
+### Contrato de dados
+
+- `RATINGS_CONTRACT` define colunas, tipos e restrições.
+- É usado para construir a suíte de expectativas programaticamente.
+
+### Validação
+
+- `validar_ratings()` cria um batch request para a tabela `ratings` e executa o checkpoint.
+- Retorna resumo com sucesso/fracasso.
+
+### Integração com Airflow
+
+- DAG `run_data_quality` chama a validação e falha se a qualidade não passar.
+
+---
+
 ## 9 — Execução
 
 ### 1. Obter chave da API TMDB
