@@ -81,6 +81,16 @@ def main() -> None:
     parser_metrics.add_argument("--port", type=int, default=8000, help="Porta do exporter")
     parser_metrics.set_defaults(func=_cmd_run_metrics_exporter)
 
+    # 6. Subcomando: serve-observability (Sobe API de observabilidade com FastAPI e Uvicorn)
+    parser_obs = subparsers.add_parser("serve-observability", help="Sobe API de observabilidade")
+    parser_obs.add_argument(
+        "--host", type=str, default="127.0.0.1", help="Endereço IP para bind do servidor"
+    )
+    parser_obs.add_argument(
+        "--port", type=int, default=8000, help="Porta TCP para bind do servidor"
+    )
+    parser_obs.set_defaults(func=_cmd_serve_obs)
+
     # Processa os argumentos fornecidos pelo usuário no terminal
     args = parser.parse_args()
     # Executa a função vinculada ao subcomando escolhido
@@ -138,7 +148,6 @@ def _cmd_run_metrics_exporter(args: argparse.Namespace) -> None:
     """Inicia o servidor de exportação de métricas HTTP do Prometheus."""
     import time
     from prometheus_client import start_http_server
-    from cinelake.observability.metrics import registrar_execucao_pipeline
 
     logger = logging.getLogger(__name__)
     # Inicializa o servidor HTTP interno na porta especificada (padrão 8000)
@@ -149,7 +158,19 @@ def _cmd_run_metrics_exporter(args: argparse.Namespace) -> None:
         time.sleep(10)
 
 
+def _cmd_serve_obs(args: argparse.Namespace) -> None:
+    """Inicia o servidor web ASGI Uvicorn executando a API FastAPI de observabilidade."""
+    import uvicorn
+    from cinelake.observability.api import app
+
+    logger = logging.getLogger(__name__)
+    logger.info("Iniciando API de observabilidade em %s:%s", args.host, args.port)
+    # Executa o servidor ASGI apontando para a aplicação FastAPI
+    uvicorn.run(app, host=args.host, port=args.port, log_level="info")
+
+
 # Ponto de entrada padrão para execução via módulo (ex: python -m cinelake)
 if __name__ == "__main__":
     main()
+
 

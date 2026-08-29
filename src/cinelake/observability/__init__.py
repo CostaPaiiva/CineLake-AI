@@ -1,1 +1,1 @@
-"""Módulo de observabilidade para logs e métricas."""
+"""Módulo de observabilidade da plataforma."""
