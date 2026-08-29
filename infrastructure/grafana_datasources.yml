@@ -1,0 +1,15 @@
+# Versão da especificação de provisionamento do Grafana
+apiVersion: 1
+
+# Lista de fontes de dados (datasources) pré-configuradas automaticamente no Grafana
+datasources:
+    # Nome da fonte de dados exibido na interface do Grafana
+  - name: Prometheus
+    # Tipo de conector/integração
+    type: prometheus
+    # Modo de acesso através do servidor proxy interno do Grafana
+    access: proxy
+    # URL de conexão com a API do container Prometheus na mesma rede Docker
+    url: http://prometheus:9090
+    # Define o Prometheus como a fonte de dados padrão para novos dashboards
+    isDefault: true
