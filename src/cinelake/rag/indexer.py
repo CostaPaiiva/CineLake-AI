@@ -7,7 +7,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from sentence_transformers import SentenceTransformer  # type: ignore[import-untyped]
+from sentence_transformers import SentenceTransformer
+
 from sqlalchemy import Connection, text
 
 from cinelake.db import get_engine
@@ -43,7 +44,8 @@ def _gerar_embedding(conteudo: str) -> list[float]:
         list[float]: Vetor de 384 números de ponto flutuante.
     """
     embedding = MODELO.encode(conteudo, normalize_embeddings=True)
-    return embedding.tolist()
+    return [float(x) for x in embedding.tolist()]
+
 
 
 def _registrar_batch(

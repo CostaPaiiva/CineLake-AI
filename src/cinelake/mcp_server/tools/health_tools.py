@@ -16,13 +16,13 @@ def registrar_ferramentas(server: Server) -> None:
         server: Instância do servidor MCP onde as ferramentas serão registradas.
     """
 
-    @server.tool("get_platform_health")  # type: ignore [misc]
+    @server.tool("get_platform_health")
     async def get_platform_health() -> str:
         """Retorna o status geral de saúde da plataforma (conectividade e contagens)."""
         status = coletar_status_geral()
         return str(status)
 
-    @server.tool("get_data_freshness")  # type: ignore [misc]
+    @server.tool("get_data_freshness")
     async def get_data_freshness() -> str:
         """Retorna a frescura (freshness) dos dados por fonte de ingestão em minutos."""
         freshness = obter_ultimas_execucoes()

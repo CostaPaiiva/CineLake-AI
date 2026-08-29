@@ -3,7 +3,10 @@
 import logging
 import sys
 
-import pythonjsonlogger.jsonlogger  # type: ignore[import-untyped]
+from pythonjsonlogger.jsonlogger import JsonFormatter  # type: ignore[attr-defined]
+
+
+
 
 
 def setup_json_logging(level: str = "INFO") -> None:
@@ -16,7 +19,7 @@ def setup_json_logging(level: str = "INFO") -> None:
     handler = logging.StreamHandler(sys.stdout)
 
     # Formatador JSON contendo data/hora, nível do log, nome do logger e mensagem
-    formatter = pythonjsonlogger.jsonlogger.JsonFormatter(
+    formatter = JsonFormatter(
         "%(asctime)s %(levelname)s %(name)s %(message)s"
     )
     handler.setFormatter(formatter)

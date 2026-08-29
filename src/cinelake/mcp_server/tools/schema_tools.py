@@ -26,7 +26,7 @@ def registrar_ferramentas(server: Server) -> None:
         server: Instância do servidor MCP onde as ferramentas serão registradas.
     """
 
-    @server.tool("get_table_schema")  # type: ignore [misc]
+    @server.tool("get_table_schema")
     async def get_table_schema(tabela: str) -> str:
         """Retorna o esquema (colunas e tipos) de uma tabela do banco de dados."""
         engine = get_engine()
@@ -43,7 +43,7 @@ def registrar_ferramentas(server: Server) -> None:
             logger.error("Erro ao obter esquema da tabela %s: %s", tabela, exc)
             return f"Erro: {exc}"
 
-    @server.tool("get_table_lineage")  # type: ignore [misc]
+    @server.tool("get_table_lineage")
     async def get_table_lineage(tabela: str) -> str:
         """Retorna a linhagem e as dependências upstream de dados de uma determinada tabela."""
         linhagem = LINHAGEM.get(tabela)

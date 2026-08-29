@@ -17,7 +17,7 @@ def registrar_ferramentas(server: Server) -> None:
         server: Instância do servidor MCP onde as ferramentas serão registradas.
     """
 
-    @server.tool("get_pipeline_status")  # type: ignore [misc]
+    @server.tool("get_pipeline_status")
     async def get_pipeline_status(source: str | None = None) -> str:
         """Retorna o histórico de execuções de pipelines, com filtro opcional por fonte de dados."""
         engine = get_engine()
@@ -48,7 +48,7 @@ def registrar_ferramentas(server: Server) -> None:
                 )
         return str(resultados)
 
-    @server.tool("list_failed_pipelines")  # type: ignore [misc]
+    @server.tool("list_failed_pipelines")
     async def list_failed_pipelines(limit: int = 10) -> str:
         """Lista as últimas execuções de pipeline que terminaram com status de falha/erro."""
         engine = get_engine()
@@ -79,7 +79,7 @@ def registrar_ferramentas(server: Server) -> None:
                 )
         return str(resultados)
 
-    @server.tool("get_pipeline_run")  # type: ignore [misc]
+    @server.tool("get_pipeline_run")
     async def get_pipeline_run(batch_id: int) -> str:
         """Retorna os detalhes completos de auditoria de uma execução específica pelo batch_id."""
         engine = get_engine()
