@@ -21,6 +21,7 @@ dependencies = [
     "pandas>=2.0",           # Manipulação e análise tabular de dados
     "dbt-core>=1.8",         # Motor de transformação de dados e modelagem analítica
     "dbt-postgres>=1.8",     # Adaptador dbt para bancos de dados PostgreSQL
+    "great_expectations>=0.18",  # Framework de validação, testes e contratos de qualidade de dados
 ]
 
 [project.optional-dependencies]
