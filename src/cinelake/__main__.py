@@ -101,6 +101,16 @@ def main() -> None:
     )
     parser_rag.set_defaults(func=_cmd_collect_rag)
 
+    # 8. Subcomando: index-rag-documents (Indexa documentos RAG e gera embeddings no pgvector)
+    parser_index = subparsers.add_parser("index-rag-documents", help="Indexa documentos RAG no pgvector")
+    parser_index.add_argument(
+        "--input-dir",
+        type=Path,
+        default=Path("data/rag/documents"),
+        help="Diretório com os documentos JSON",
+    )
+    parser_index.set_defaults(func=_cmd_index_rag)
+
     # Processa os argumentos fornecidos pelo usuário no terminal
     args = parser.parse_args()
     # Executa a função vinculada ao subcomando escolhido
@@ -188,6 +198,16 @@ def _cmd_collect_rag(args: argparse.Namespace) -> None:
     logger = logging.getLogger(__name__)
     logger.info("Iniciando coleta de documentos RAG...")
     resultado = coletar_documentos_rag(args.output_dir)
+    logger.info("Resultado: %s", resultado)
+
+
+def _cmd_index_rag(args: argparse.Namespace) -> None:
+    """Executa a indexação e vetorização dos documentos RAG no PostgreSQL (pgvector)."""
+    from cinelake.rag.indexer import indexar_documentos
+
+    logger = logging.getLogger(__name__)
+    logger.info("Iniciando indexação RAG...")
+    resultado = indexar_documentos(args.input_dir)
     logger.info("Resultado: %s", resultado)
 
 
