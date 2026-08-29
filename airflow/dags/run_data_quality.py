@@ -7,8 +7,9 @@ import os
 import sys
 from datetime import datetime, timedelta
 
-from airflow import DAG
 from airflow.operators.python import PythonOperator
+
+from airflow import DAG
 
 # Adiciona o diretório raiz do projeto ao PYTHONPATH para importar o pacote cinelake
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))

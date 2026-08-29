@@ -1,7 +1,7 @@
 """Configurações da aplicação carregadas a partir de variáveis de ambiente."""
 
-from dataclasses import dataclass
 import os
+from dataclasses import dataclass
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -42,22 +42,22 @@ class Settings:
         db = os.getenv("POSTGRES_DB", "cinelake")
         host = os.getenv("POSTGRES_HOST", "127.0.0.1")
         port = int(os.getenv("POSTGRES_PORT", "5432"))
-        
+
         # Constrói a URL do banco caso DATABASE_URL não esteja explicitamente configurada
         database_url = os.getenv(
             "DATABASE_URL",
             f"postgresql+psycopg://{user}:{password}@{host}:{port}/{db}",
         )
-        
+
         # Chave da API do TMDB
         tmdb_api_key = os.getenv("TMDB_API_KEY", "")
-        
+
         # Configurações do MinIO com valores padrão (fallback) caso não estejam no ambiente
         minio_access_key = os.getenv("MINIO_ACCESS_KEY", "cinelake_minio")
         minio_secret_key = os.getenv("MINIO_SECRET_KEY", "cinelake_minio_secret")
         minio_endpoint = os.getenv("MINIO_ENDPOINT", "127.0.0.1:9000")
         minio_bucket = os.getenv("MINIO_BUCKET", "data-lake")
-        
+
         # Converte a string do SSL para um valor booleano Python (True/False)
         minio_use_ssl = os.getenv("MINIO_USE_SSL", "false").lower() == "true"
 

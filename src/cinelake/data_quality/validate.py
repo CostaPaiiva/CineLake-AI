@@ -1,19 +1,18 @@
-﻿# ==============================================================================
+# ==============================================================================
 # validate.py - Módulo de Validação de Dados com Great Expectations
 # ==============================================================================
 """Funções para validar dados com Great Expectations."""
 
 import logging
-from pathlib import Path
 
-import great_expectations as ge
-from great_expectations.checkpoint import Checkpoint
 from great_expectations.core.batch import RuntimeBatchRequest
 from great_expectations.data_context import BaseDataContext
-from great_expectations.data_context.types.base import DataContextConfig, FilesystemStoreBackendDefaults
+from great_expectations.data_context.types.base import (
+    DataContextConfig,
+    FilesystemStoreBackendDefaults,
+)
 
-from cinelake.config import settings
-from cinelake.db import get_engine
+from typing import Any
 
 # Configuração do logger do módulo
 logger = logging.getLogger(__name__)
@@ -22,7 +21,7 @@ logger = logging.getLogger(__name__)
 def criar_data_context() -> BaseDataContext:
     """
     Cria ou carrega o Data Context do Great Expectations na raiz do projeto.
-    
+
     Returns:
         BaseDataContext: Instância do contexto do Great Expectations.
     """
@@ -33,12 +32,12 @@ def criar_data_context() -> BaseDataContext:
     return contexto
 
 
-def validar_ratings() -> dict:
+def validar_ratings() -> dict[str, Any]:
     """
     Executa a validação do Great Expectations na tabela ratings do PostgreSQL.
-    
+
     Retorna:
-        dict: Dicionário contendo o status de sucesso e os detalhes/estatísticas do checkpoint.
+        dict[str, Any]: Dicionário contendo o status de sucesso e os detalhes/estatísticas do checkpoint.
     """
     contexto = criar_data_context()
 

@@ -5,14 +5,15 @@ import logging
 from pathlib import Path
 
 import pandas as pd
-import pyarrow as pa
-import pyarrow.parquet as pq
 from sqlalchemy import text
 
 from cinelake.config import settings
+from cinelake.datalake.minio_client import (
+    criar_cliente_minio,
+    fazer_upload_parquet,
+    garantir_bucket,
+)
 from cinelake.db import get_engine
-from cinelake.datalake.minio_client import criar_cliente_minio, garantir_bucket, fazer_upload_parquet
-from cinelake.ingestion.movielens.ingest import _contar_registros  # Reutilizamos função de contagem de registros
 
 # Inicializa o sistema de logs para rastreamento de progresso e erros
 logger = logging.getLogger(__name__)

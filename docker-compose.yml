@@ -72,12 +72,70 @@ services:
           cpus: "1.0"   # Limita o uso a no máximo 1 núcleo de CPU
           memory: 1G    # Limita o uso a no máximo 1 Gigabyte de memória RAM
 
+  # Serviço do Prometheus para coleta de métricas
+  prometheus:
+    # Imagem oficial mais recente do Prometheus
+    image: prom/prometheus:latest
+    # Nome do container quando estiver em execução
+    container_name: cinelake-prometheus
+    # Reinicia o container automaticamente caso ele caia, a menos que seja parado manualmente
+    restart: unless-stopped
+    # Mapeamento dos arquivos de configuração e volume de persistência de métricas
+    volumes:
+      - ./infrastructure/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    # Exposição da porta 9090 apenas para o localhost
+    ports:
+      - "127.0.0.1:9090:9090"
+    # Rede de comunicação interna dos containers
+    networks:
+      - cinelake-network
+    # Verificação de integridade (Healthcheck) da API do Prometheus
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9090/-/healthy"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # Serviço do Grafana para visualização de dashboards e métricas
+  grafana:
+    # Imagem oficial mais recente do Grafana
+    image: grafana/grafana:latest
+    # Nome do container quando estiver em execução
+    container_name: cinelake-grafana
+    # Reinicia o container automaticamente caso ele caia, a menos que seja parado manualmente
+    restart: unless-stopped
+    # Configuração de credenciais do usuário admin via variável de ambiente
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+    # Mapeamento do provisionamento automático de fontes de dados/dashboards e volume persistente
+    volumes:
+      - ./infrastructure/grafana_datasources.yml:/etc/grafana/provisioning/datasources/datasources.yml
+      - ./infrastructure/grafana_dashboards.yml:/etc/grafana/provisioning/dashboards/dashboards.yml
+      - grafana_data:/var/lib/grafana
+    # Exposição da porta 3000 apenas para o localhost
+    ports:
+      - "127.0.0.1:3000:3000"
+    # Rede de comunicação interna dos containers
+    networks:
+      - cinelake-network
+    # Verificação de integridade (Healthcheck) da API do Grafana
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
 # Definição dos volumes persistentes nomeados
 volumes:
   pgdata:
     name: cinelake_pgdata       # Nome do volume no Docker para o banco de dados
   minio_data:
     name: cinelake_minio_data   # Nome do volume no Docker para o armazenamento de arquivos do MinIO
+  prometheus_data:
+    name: cinelake_prometheus_data # Nome do volume no Docker para a base de dados do Prometheus
+  grafana_data:
+    name: cinelake_grafana_data    # Nome do volume no Docker para as configurações do Grafana
 
 # Definição de redes personalizadas
 networks:

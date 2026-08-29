@@ -22,6 +22,8 @@ dependencies = [
     "dbt-core>=1.8",         # Motor de transformação de dados e modelagem analítica
     "dbt-postgres>=1.8",     # Adaptador dbt para bancos de dados PostgreSQL
     "great_expectations>=0.18",  # Framework de validação, testes e contratos de qualidade de dados
+    "prometheus_client>=0.18",   # Cliente para exportação e coleta de métricas de observabilidade
+    "python-json-logger>=2.0",   # Formatação de logs da aplicação em estrutura JSON
 ]
 
 [project.optional-dependencies]
