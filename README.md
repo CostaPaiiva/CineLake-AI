@@ -261,3 +261,55 @@ for obj in resposta.get('Contents', []):
     print(obj['Key'])
 "
 ```
+
+---
+
+## Observabilidade Básica
+
+Subir API de observabilidade:
+
+```bash
+python -m cinelake serve-observability --host 127.0.0.1 --port 8000
+```
+
+Endpoints disponíveis:
+
+- `GET /health` – status geral da plataforma.
+- `GET /metrics` – contagens e freshness das fontes.
+- `GET /freshness` – freshness por fonte.
+
+Exemplo:
+
+```bash
+curl http://127.0.0.1:8000/health
+```
+
+---
+
+## 8 — Explicação
+
+### `health.py`
+
+- `verificar_conexao_postgres()`: faz `SELECT 1` para validar conexão.
+- `obter_contagens_tabelas()`: conta linhas das tabelas principais, incluindo tabelas marts do dbt.
+- `obter_ultimas_execucoes()`: consulta `ingestion_batch` para pegar última execução bem-sucedida por fonte e calcula freshness.
+- `coletar_status_geral()`: agrega tudo.
+
+### `api.py`
+
+- Define endpoints FastAPI que chamam as funções de coleta.
+- Tratamento de erros com HTTP 500.
+
+### Comando CLI
+
+- `serve-observability` inicia o servidor Uvicorn para expor a API.
+
+---
+
+## 9 — Execução
+
+### 1. Instalar dependências
+
+```bash
+pip install -e ".[dev]"
+```
