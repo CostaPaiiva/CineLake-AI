@@ -28,3 +28,30 @@ htmlcov/
 # Sistema operacional
 .DS_Store
 Thumbs.db
+
+# Dados e Arquivos Locais (Evitar vazamento para o GitHub)
+data/
+*.parquet
+*.csv
+*.json
+*.sqlite
+*.db
+
+# Credenciais, Chaves SSH e Segredos
+.env
+.env.*
+*.pem
+*.key
+*.id_rsa
+*.id_rsa.pub
+id_rsa
+id_rsa.pub
+
+# dbt Artefatos e Pacotes
+dbt_project/target/
+dbt_project/dbt_packages/
+dbt_project/logs/
+target/
+dbt_packages/
+logs/
+
