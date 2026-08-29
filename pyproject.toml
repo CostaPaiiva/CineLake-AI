@@ -27,6 +27,7 @@ dependencies = [
     "fastapi>=0.110",            # Framework web assíncrono para construção de APIs REST de alta performance
     "uvicorn>=0.27",             # Servidor de aplicação ASGI de alta velocidade para Python
     "mcp>=1.0",                  # SDK do Model Context Protocol para integração com agentes de IA
+    "sentence-transformers>=2.7", # Modelo de aprendizado de máquina para geração de embeddings vetoriais RAG
 ]
 
 [project.optional-dependencies]
