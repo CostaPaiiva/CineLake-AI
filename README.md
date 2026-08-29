@@ -18,7 +18,7 @@ O **CineLake AI** é um projeto de portfólio que constrói uma plataforma de da
 
 O ambiente-alvo é uma VPS Ubuntu. Os serviços de infraestrutura ficam isolados em Docker e suas portas são vinculadas a `127.0.0.1`; o acesso remoto é feito por túnel SSH.
 
-> Estado atual: fundação de dados implementada — PostgreSQL, ingestões MovieLens/TMDb, camada Bronze no MinIO, dbt, Great Expectations, API de observabilidade, métricas Prometheus e servidor MCP somente leitura.
+> Estado atual: fundação de dados implementada — PostgreSQL, ingestões MovieLens/TMDb, camada Bronze no MinIO, dbt, Great Expectations, API de observabilidade, métricas Prometheus, servidor MCP somente leitura e preparação de corpus RAG.
 
 ## Arquitetura
 
@@ -36,6 +36,8 @@ flowchart LR
     PG --> GE[Great Expectations]
     PG --> OBS[API de observabilidade]
     OBS --> MCP[MCP Server]
+    DOCS[ADRs · dbt · contratos · banco] --> RAG[Coleta e indexação RAG]
+    RAG --> VDB[(pgvector · planejado)]
     EXP[Exporter Prometheus] --> PROM[Prometheus]
     PROM --> GRAF[Grafana]
 ```
@@ -50,6 +52,7 @@ flowchart LR
 | Qualidade | Contrato de `ratings` e validação com Great Expectations |
 | Observabilidade | API FastAPI, exporter Prometheus, Prometheus e Grafana |
 | IA agêntica | Servidor MCP via `stdio`, com ferramentas de consulta somente leitura |
+| RAG | Coleta e normalização de contexto; indexação com embeddings em evolução |
 
 ## Principais capacidades
 
@@ -61,10 +64,11 @@ flowchart LR
 - Contrato de dados para ratings — campos obrigatórios e faixa de nota entre `0.5` e `5.0`.
 - Endpoints de saúde e freshness; métricas de pipeline compatíveis com Prometheus.
 - Ferramentas MCP para saúde, execução de pipelines, qualidade, esquema e linhagem simplificada.
+- Coleta de contexto para RAG a partir de ADRs, runbooks, contratos, modelos dbt e metadados operacionais.
 
 ## Stack
 
-`Python` · `PostgreSQL` · `Docker Compose` · `MinIO` · `Apache Parquet` · `SQLAlchemy` · `Alembic` · `dbt` · `Great Expectations` · `FastAPI` · `Prometheus` · `Grafana` · `Model Context Protocol`
+`Python` · `PostgreSQL` · `Docker Compose` · `MinIO` · `Apache Parquet` · `SQLAlchemy` · `Alembic` · `dbt` · `Great Expectations` · `FastAPI` · `Prometheus` · `Grafana` · `Sentence Transformers` · `Model Context Protocol`
 
 ## Pré-requisitos
 
@@ -221,6 +225,12 @@ O servidor MCP opera por `stdio` e expõe ferramentas somente leitura para que u
 python -m cinelake.mcp_server.server
 ```
 
+### Preparação do RAG
+
+O módulo `cinelake.rag` prepara o conhecimento da plataforma para uma futura camada de recuperação. Ele coleta ADRs, runbooks, modelos e schemas dbt, contratos de dados, esquema do PostgreSQL e as últimas execuções de pipeline; os documentos normalizados são persistidos em JSON.
+
+A indexação gera embeddings com `all-MiniLM-L6-v2` e foi desenhada para fazer upsert em `rag_documents` usando pgvector. Esta etapa ainda não é uma interface operacional pronta: faltam a migração da tabela/extensão pgvector e um comando CLI para acioná-la. Por isso, ela não entra no fluxo de início rápido.
+
 ## Testes e qualidade de código
 
 ```bash
@@ -249,7 +259,8 @@ mypy src
 │   ├── datalake/            # Bronze e cliente MinIO
 │   ├── data_quality/        # Contratos e Great Expectations
 │   ├── observability/       # API, health e métricas
-│   └── mcp_server/          # Servidor e ferramentas MCP
+│   ├── mcp_server/          # Servidor e ferramentas MCP
+│   └── rag/                 # Coleta, normalização e indexação de contexto
 └── tests/                   # Testes unitários e de integração
 ```
 
@@ -267,6 +278,7 @@ mypy src
 - Evoluir a orquestração do Airflow para os pipelines de ingestão e transformação.
 - Adicionar CI, cobertura de testes e publicação de imagens.
 - Implementar as camadas Silver/Gold e um fluxo de recomendação/MLOps.
+- Concluir o RAG com pgvector, migração de schema, comando CLI e recuperação de contexto.
 - Gerar linhagem automaticamente a partir dos artefatos do dbt.
 
 ## Licença
