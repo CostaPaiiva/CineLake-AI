@@ -91,6 +91,16 @@ def main() -> None:
     )
     parser_obs.set_defaults(func=_cmd_serve_obs)
 
+    # 7. Subcomando: collect-rag-documents (Coleta e normaliza documentos de contexto para o RAG)
+    parser_rag = subparsers.add_parser("collect-rag-documents", help="Coleta documentos para RAG")
+    parser_rag.add_argument(
+        "--output-dir",
+        type=Path,
+        default=Path("data/rag/documents"),
+        help="Diretório para salvar documentos normalizados (padrão: data/rag/documents)",
+    )
+    parser_rag.set_defaults(func=_cmd_collect_rag)
+
     # Processa os argumentos fornecidos pelo usuário no terminal
     args = parser.parse_args()
     # Executa a função vinculada ao subcomando escolhido
@@ -169,8 +179,19 @@ def _cmd_serve_obs(args: argparse.Namespace) -> None:
     uvicorn.run(app, host=args.host, port=args.port, log_level="info")
 
 
+def _cmd_collect_rag(args: argparse.Namespace) -> None:
+    """Executa a coleta e normalização de documentos de contexto para o pipeline de RAG."""
+    from cinelake.rag.collector import coletar_documentos_rag
+
+    logger = logging.getLogger(__name__)
+    logger.info("Iniciando coleta de documentos RAG...")
+    resultado = coletar_documentos_rag(args.output_dir)
+    logger.info("Resultado: %s", resultado)
+
+
 # Ponto de entrada padrão para execução via módulo (ex: python -m cinelake)
 if __name__ == "__main__":
     main()
+
 
 
