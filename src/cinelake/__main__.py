@@ -111,6 +111,15 @@ def main() -> None:
     )
     parser_index.set_defaults(func=_cmd_index_rag)
 
+    # 9. Subcomando: serve-rag-mcp (Sobe API FastAPI que combina RAG e MCP)
+    parser_rag_mcp = subparsers.add_parser("serve-rag-mcp", help="Sobe API RAG+MCP")
+    # Define o argumento de endereço IP/host para bind do servidor (padrão: 127.0.0.1)
+    parser_rag_mcp.add_argument("--host", type=str, default="127.0.0.1", help="Host")
+    # Define o argumento de porta TCP para bind do servidor (padrão: 8001)
+    parser_rag_mcp.add_argument("--port", type=int, default=8001, help="Porta")
+    # Vincula o subcomando à função correspondente que executa o servidor
+    parser_rag_mcp.set_defaults(func=_cmd_serve_rag_mcp)
+
     # Processa os argumentos fornecidos pelo usuário no terminal
     args = parser.parse_args()
     # Executa a função vinculada ao subcomando escolhido
@@ -211,9 +220,27 @@ def _cmd_index_rag(args: argparse.Namespace) -> None:
     logger.info("Resultado: %s", resultado)
 
 
+def _cmd_serve_rag_mcp(args: argparse.Namespace) -> None:
+    # Docstring da função explicitando que inicia o servidor FastAPI para RAG+MCP.
+    """Inicia o servidor FastAPI para RAG+MCP."""
+    # Importação tardia do servidor Uvicorn para hospedagem ASGI da aplicação web.
+    import uvicorn
+
+    # Importação tardia da aplicação FastAPI do módulo rag_mcp.
+    from cinelake.api.rag_mcp import app
+
+    # Obtém a instância do logger para este módulo.
+    logger = logging.getLogger(__name__)
+    # Registra no log o início da execução da API informando host e porta.
+    logger.info("Iniciando API RAG+MCP em %s:%s", args.host, args.port)
+    # Inicializa o servidor ASGI uvicorn passando a instância da aplicação FastAPI.
+    uvicorn.run(app, host=args.host, port=args.port, log_level="info")
+
+
 # Ponto de entrada padrão para execução via módulo (ex: python -m cinelake)
 if __name__ == "__main__":
     main()
+
 
 
 
