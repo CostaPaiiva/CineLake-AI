@@ -18,7 +18,7 @@ O **CineLake AI** é um projeto de portfólio que constrói uma plataforma de da
 
 O ambiente-alvo é uma VPS Ubuntu. Os serviços de infraestrutura ficam isolados em Docker e suas portas são vinculadas a `127.0.0.1`; o acesso remoto é feito por túnel SSH.
 
-> Estado atual: fundação de dados implementada — PostgreSQL, ingestões MovieLens/TMDb, camada Bronze no MinIO, dbt, Great Expectations, API de observabilidade, métricas Prometheus, servidor MCP somente leitura e preparação de corpus RAG.
+> Estado atual: fundação de dados implementada — PostgreSQL com pgvector, ingestões MovieLens/TMDb, camada Bronze no MinIO, dbt, Great Expectations, observabilidade, servidor MCP somente leitura e API RAG+MCP.
 
 ## Arquitetura
 
@@ -37,7 +37,9 @@ flowchart LR
     PG --> OBS[API de observabilidade]
     OBS --> MCP[MCP Server]
     DOCS[ADRs · dbt · contratos · banco] --> RAG[Coleta e indexação RAG]
-    RAG --> VDB[(pgvector · planejado)]
+    RAG --> VDB[(PostgreSQL + pgvector)]
+    VDB --> RAGAPI[API RAG + MCP]
+    MCP --> RAGAPI
     EXP[Exporter Prometheus] --> PROM[Prometheus]
     PROM --> GRAF[Grafana]
 ```
@@ -46,13 +48,13 @@ flowchart LR
 | --- | --- |
 | Fontes | MovieLens e TMDb |
 | Ingestão | CLI Python, auditoria em `ingestion_batch` e reexecução idempotente |
-| Persistência operacional | PostgreSQL 16 + Alembic |
+| Persistência operacional | PostgreSQL 16 com pgvector + Alembic |
 | Data Lake | MinIO compatível com S3, dados Bronze em Parquet |
 | Transformação | dbt: staging e marts com esquema dimensional |
 | Qualidade | Contrato de `ratings` e validação com Great Expectations |
 | Observabilidade | API FastAPI, exporter Prometheus, Prometheus e Grafana |
-| IA agêntica | Servidor MCP via `stdio`, com ferramentas de consulta somente leitura |
-| RAG | Coleta e normalização de contexto; indexação com embeddings em evolução |
+| IA agêntica | Servidor MCP via `stdio` e API RAG+MCP, com ferramentas de consulta somente leitura |
+| RAG | Coleta, embeddings, busca vetorial e contexto para LLM |
 
 ## Principais capacidades
 
@@ -65,10 +67,12 @@ flowchart LR
 - Endpoints de saúde e freshness; métricas de pipeline compatíveis com Prometheus.
 - Ferramentas MCP para saúde, execução de pipelines, qualidade, esquema e linhagem simplificada.
 - Coleta de contexto para RAG a partir de ADRs, runbooks, contratos, modelos dbt e metadados operacionais.
+- Indexação idempotente de documentos RAG no PostgreSQL/pgvector com embeddings de 384 dimensões.
+- Endpoint `POST /ask` que combina busca vetorial e ferramenta MCP adequada ao contexto da pergunta.
 
 ## Stack
 
-`Python` · `PostgreSQL` · `Docker Compose` · `MinIO` · `Apache Parquet` · `SQLAlchemy` · `Alembic` · `dbt` · `Great Expectations` · `FastAPI` · `Prometheus` · `Grafana` · `Sentence Transformers` · `Model Context Protocol`
+`Python` · `PostgreSQL + pgvector` · `Docker Compose` · `MinIO` · `Apache Parquet` · `SQLAlchemy` · `Alembic` · `dbt` · `Great Expectations` · `FastAPI` · `Prometheus` · `Grafana` · `Sentence Transformers` · `Model Context Protocol`
 
 ## Pré-requisitos
 
@@ -148,6 +152,20 @@ dbt run
 dbt test
 ```
 
+### 7. Criar o índice de conhecimento RAG
+
+```bash
+cd ..
+
+# Coleta contexto do repositório e do banco em JSON normalizado
+python -m cinelake collect-rag-documents
+
+# Gera embeddings e faz upsert em rag_documents (pgvector)
+python -m cinelake index-rag-documents
+```
+
+Na primeira execução, o modelo `all-MiniLM-L6-v2` será baixado. As migrações aplicadas no passo 3 habilitam a extensão `vector` e criam a tabela `rag_documents`.
+
 ## Comandos da CLI
 
 | Comando | Finalidade |
@@ -158,6 +176,9 @@ dbt test
 | `python -m cinelake ingest-datalake-bronze` | Converte dados brutos em Parquet e os envia ao MinIO |
 | `python -m cinelake serve-observability` | Inicia a API FastAPI de observabilidade |
 | `python -m cinelake run-metrics-exporter` | Inicia o endpoint Prometheus na porta 8000 |
+| `python -m cinelake collect-rag-documents` | Coleta e normaliza documentos de contexto para RAG |
+| `python -m cinelake index-rag-documents` | Gera embeddings e indexa documentos no pgvector |
+| `python -m cinelake serve-rag-mcp` | Inicia a API que combina RAG e MCP na porta 8001 |
 
 ## Operação
 
@@ -225,11 +246,25 @@ O servidor MCP opera por `stdio` e expõe ferramentas somente leitura para que u
 python -m cinelake.mcp_server.server
 ```
 
-### Preparação do RAG
+### RAG + MCP API
 
-O módulo `cinelake.rag` prepara o conhecimento da plataforma para uma futura camada de recuperação. Ele coleta ADRs, runbooks, modelos e schemas dbt, contratos de dados, esquema do PostgreSQL e as últimas execuções de pipeline; os documentos normalizados são persistidos em JSON.
+O módulo `cinelake.rag` coleta ADRs, runbooks, modelos e schemas dbt, contratos de dados, esquema do PostgreSQL e o histórico de pipelines. Os documentos são normalizados em JSON, vetorizados pelo modelo `all-MiniLM-L6-v2` e indexados com upsert idempotente em `rag_documents`.
 
-A indexação gera embeddings com `all-MiniLM-L6-v2` e foi desenhada para fazer upsert em `rag_documents` usando pgvector. Esta etapa ainda não é uma interface operacional pronta: faltam a migração da tabela/extensão pgvector e um comando CLI para acioná-la. Por isso, ela não entra no fluxo de início rápido.
+Inicie a API RAG+MCP:
+
+```bash
+python -m cinelake serve-rag-mcp --host 127.0.0.1 --port 8001
+```
+
+Envie uma pergunta:
+
+```bash
+curl -X POST http://127.0.0.1:8001/ask \
+  -H "Content-Type: application/json" \
+  -d '{"texto":"Qual é o status da plataforma?", "top_k": 5}'
+```
+
+O endpoint recupera documentos semanticamente similares e seleciona, quando aplicável, uma ferramenta MCP local para obter contexto operacional atual. A resposta devolve o contexto estruturado; a geração final por um LLM ainda não é implementada.
 
 ## Testes e qualidade de código
 
@@ -260,7 +295,8 @@ mypy src
 │   ├── data_quality/        # Contratos e Great Expectations
 │   ├── observability/       # API, health e métricas
 │   ├── mcp_server/          # Servidor e ferramentas MCP
-│   └── rag/                 # Coleta, normalização e indexação de contexto
+│   ├── rag/                 # Coleta, embeddings, busca vetorial e integração MCP
+│   └── api/                 # API RAG + MCP
 └── tests/                   # Testes unitários e de integração
 ```
 
@@ -278,7 +314,8 @@ mypy src
 - Evoluir a orquestração do Airflow para os pipelines de ingestão e transformação.
 - Adicionar CI, cobertura de testes e publicação de imagens.
 - Implementar as camadas Silver/Gold e um fluxo de recomendação/MLOps.
-- Concluir o RAG com pgvector, migração de schema, comando CLI e recuperação de contexto.
+- Integrar um provedor LLM para transformar o contexto RAG+MCP em respostas finais.
+- Criar avaliações de recuperação, relevância e segurança para o fluxo RAG.
 - Gerar linhagem automaticamente a partir dos artefatos do dbt.
 
 ## Licença
