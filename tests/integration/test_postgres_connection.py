@@ -21,9 +21,7 @@ def test_service_heartbeat_table_exists() -> None:
     try:
         with engine.connect() as conn:
             # Consulta o Postgres para verificar se a tabela existe no schema público
-            result = conn.execute(
-                text("SELECT to_regclass('public.service_heartbeat')")
-            ).scalar()
+            result = conn.execute(text("SELECT to_regclass('public.service_heartbeat')")).scalar()
             # Garante que o retorno do banco de dados seja o próprio nome
             # da tabela, confirmando sua existência
             assert result == "service_heartbeat"

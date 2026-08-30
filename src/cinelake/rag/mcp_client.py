@@ -3,8 +3,10 @@
 
 # Importa o módulo importlib para importação dinâmica de módulos Python.
 import importlib
+
 # Importa o módulo nativo de logging para registro de mensagens e diagnósticos.
 import logging
+
 # Importa o tipo Any do módulo typing para anotações de tipos genéricos.
 from typing import Any
 
@@ -12,11 +14,11 @@ from typing import Any
 logger = logging.getLogger(__name__)
 
 
-# Define a função para invocar uma ferramenta MCP localmente recebendo o nome da função e seus argumentos.
+# Define a função para invocar uma ferramenta MCP localmente
+# recebendo o nome da função e seus argumentos.
 def invocar_ferramenta_mcp(nome_ferramenta: str, argumentos: dict[str, Any] | None = None) -> Any:
     # Docstring explicativa das responsabilidades da função e seus parâmetros.
-    """
-    Invoca uma ferramenta MCP localmente.
+    """Invoca uma ferramenta MCP localmente.
 
     Como o MCP Server V1 é nosso, importamos diretamente as funções.
     Em uma arquitetura distribuída, isso seria substituído por chamadas HTTP/SSE.
@@ -28,7 +30,8 @@ def invocar_ferramenta_mcp(nome_ferramenta: str, argumentos: dict[str, Any] | No
     Returns:
         Resultado retornado pela ferramenta.
     """
-    # Garante que o parâmetro argumentos seja um dicionário (se for None, inicializa como dicionário vazio).
+    # Garante que o parâmetro argumentos seja um dicionário
+    # (se for None, inicializa como dicionário vazio).
     argumentos = argumentos or {}
     # Bloco try para capturar e tratar possíveis exceções durante a execução da ferramenta.
     try:
@@ -40,7 +43,8 @@ def invocar_ferramenta_mcp(nome_ferramenta: str, argumentos: dict[str, Any] | No
         funcao = getattr(modulo, nome_ferramenta)
         # Registra no log a tentativa de invocação da ferramenta MCP especificada.
         logger.info("Invocando ferramenta MCP: %s", nome_ferramenta)
-        # Executa a função passando os argumentos desempacotados em chave-valor (se existirem) ou sem argumentos.
+        # Executa a função passando os argumentos desempacotados em chave-valor
+        # (se existirem) ou sem argumentos.
         resultado = funcao(**argumentos) if argumentos else funcao()
         # Retorna o resultado gerado pela execução da ferramenta.
         return resultado

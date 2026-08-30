@@ -1,1 +1,1 @@
-﻿"""Submódulo de contratos de dados (Data Contracts)."""
+"""Submódulo de contratos de dados (Data Contracts)."""

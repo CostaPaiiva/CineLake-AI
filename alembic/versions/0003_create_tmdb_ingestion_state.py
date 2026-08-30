@@ -5,6 +5,7 @@ Revises: 0002
 Create Date: 2026-08-23
 
 """
+
 from collections.abc import Sequence
 
 import sqlalchemy as sa
@@ -44,9 +45,7 @@ def upgrade() -> None:
     )
 
     # Insere o registro inicial padrão (id=1, last_processed_movie_id=0)
-    op.execute(
-        "INSERT INTO tmdb_ingestion_state (id, last_processed_movie_id) VALUES (1, 0)"
-    )
+    op.execute("INSERT INTO tmdb_ingestion_state (id, last_processed_movie_id) VALUES (1, 0)")
 
 
 def downgrade() -> None:

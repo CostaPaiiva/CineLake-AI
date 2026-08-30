@@ -34,10 +34,7 @@ def registrar_ferramentas(server: FastMCP) -> None:
             with engine.connect() as conn:
                 insp = inspect(conn)
                 colunas = insp.get_columns(tabela)
-                resultado = [
-                    {"coluna": col["name"], "tipo": str(col["type"])}
-                    for col in colunas
-                ]
+                resultado = [{"coluna": col["name"], "tipo": str(col["type"])} for col in colunas]
             return str(resultado)
         except Exception as exc:
             logger.error("Erro ao obter esquema da tabela %s: %s", tabela, exc)

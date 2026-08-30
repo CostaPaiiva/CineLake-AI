@@ -154,9 +154,7 @@ def coletar_schema_tabelas() -> list[dict[str, Any]]:
                 """),
                 {"tabela": tabela},
             ).fetchall()
-            descricao = "\n".join(
-                [f"{col[0]} ({col[1]}) nullable={col[2]}" for col in colunas]
-            )
+            descricao = "\n".join([f"{col[0]} ({col[1]}) nullable={col[2]}" for col in colunas])
             documentos.append(
                 criar_documento(
                     titulo=f"Schema da tabela: {tabela}",
@@ -230,4 +228,3 @@ def coletar_documentos_rag(diretorio_saida: Path) -> dict[str, Any]:
 
     logger.info("Coleta concluída. Total de documentos: %d", len(documentos))
     return {"total_documentos": len(documentos)}
-

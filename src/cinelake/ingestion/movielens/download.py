@@ -9,9 +9,7 @@ from pathlib import Path
 logger = logging.getLogger(__name__)
 
 # URL padrão para download do conjunto de dados reduzido (small) do MovieLens
-URL_MOVIELENS_PEQUENO = (
-    "https://files.grouplens.org/datasets/movielens/ml-latest-small.zip"
-)
+URL_MOVIELENS_PEQUENO = "https://files.grouplens.org/datasets/movielens/ml-latest-small.zip"
 
 
 def baixar_movielens(url: str, destino: Path) -> Path:

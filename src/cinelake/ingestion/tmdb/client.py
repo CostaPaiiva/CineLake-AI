@@ -117,9 +117,7 @@ class TMDBClient:
                 backoff *= 2  # Dobra o tempo de espera a cada nova falha (1s, 2s, 4s, 8s)
             else:
                 logger.error("Máximo de tentativas atingido para %s", endpoint)
-                raise RuntimeError(
-                    f"Falha ao acessar {endpoint} após {max_tentativas} tentativas"
-                )
+                raise RuntimeError(f"Falha ao acessar {endpoint} após {max_tentativas} tentativas")
 
         # Código defensivo caso saia do loop inesperadamente
         raise RuntimeError(f"Falha inesperada ao acessar {endpoint}")

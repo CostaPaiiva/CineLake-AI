@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 def _converter_csv_para_parquet(caminho_csv: Path, arquivo_parquet: Path) -> None:
     """Lê um arquivo local CSV e o converte para o formato colunar Parquet.
-    
+
     A conversão reduz consideravelmente o tamanho do arquivo e otimiza a leitura posterior.
     """
     logger.info("Convertendo %s para %s", caminho_csv, arquivo_parquet)
@@ -46,9 +46,11 @@ def _converter_jsons_para_parquet(diretorio: Path, arquivo_parquet: Path) -> Non
     df.to_parquet(arquivo_parquet, index=False, engine="pyarrow")
 
 
-def _registrar_batch(conn: Connection, fonte: str, status: str, rows_processed: int, error_message: str | None = None) -> int:
+def _registrar_batch(
+    conn: Connection, fonte: str, status: str, rows_processed: int, error_message: str | None = None
+) -> int:
     """Insere o log de execução do lote (batch) de ingestão na tabela 'ingestion_batch' do PostgreSQL.
-    
+
     Permite auditar quando a ingestão rodou, quantos dados processou e se houve falhas.
     """
     from datetime import datetime, timezone
@@ -75,7 +77,7 @@ def _registrar_batch(conn: Connection, fonte: str, status: str, rows_processed: 
 
 def ingerir_bronze(diretorio_movielens: Path, diretorio_tmdb: Path) -> dict[str, Any]:
     """Orquestra a ingestão da camada Bronze.
-    
+
     1. Converte dados brutos locais (CSV do MovieLens e JSON do TMDB) para Parquet.
     2. Garante a existência do bucket no MinIO.
     3. Faz o upload dos arquivos Parquet resultantes para o MinIO.
@@ -148,7 +150,9 @@ def ingerir_bronze(diretorio_movielens: Path, diretorio_tmdb: Path) -> dict[str,
 
             # Registra no PostgreSQL o sucesso do lote de ingestão bronze
             _registrar_batch(conn, "datalake_bronze", "success", total_arquivos)
-            logger.info("Ingestão bronze concluída com sucesso. Arquivos enviados: %d", total_arquivos)
+            logger.info(
+                "Ingestão bronze concluída com sucesso. Arquivos enviados: %d", total_arquivos
+            )
 
     except Exception as exc:
         erro = str(exc)

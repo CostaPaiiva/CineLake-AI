@@ -109,4 +109,3 @@ def coletar_status_geral() -> dict[str, Any]:
         "contagens": contagens,
         "fontes": ultimas,
     }
-

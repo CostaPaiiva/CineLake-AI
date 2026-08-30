@@ -5,6 +5,7 @@ Revises: 0001
 Create Date: 2026-08-23
 
 """
+
 from collections.abc import Sequence
 
 import sqlalchemy as sa
@@ -59,14 +60,24 @@ def upgrade() -> None:
     op.create_table(
         "ingestion_batch",
         sa.Column("batch_id", sa.BigInteger(), primary_key=True, autoincrement=True),
-        sa.Column("source", sa.Text(), nullable=False),            # Origem dos dados ingestados
-        sa.Column("status", sa.Text(), nullable=False),            # Status do lote (ex: success, error, running)
-        sa.Column("started_at", sa.DateTime(timezone=True), nullable=False),   # Data/hora de início
-        sa.Column("finished_at", sa.DateTime(timezone=True), nullable=True),  # Data/hora de conclusão
-        sa.Column("rows_processed", sa.BigInteger(), nullable=False, server_default="0"), # Total processado
-        sa.Column("rows_inserted", sa.BigInteger(), nullable=False, server_default="0"),  # Linhas inseridas
-        sa.Column("rows_updated", sa.BigInteger(), nullable=False, server_default="0"),   # Linhas atualizadas
-        sa.Column("error_message", sa.Text(), nullable=True),      # Mensagem de erro caso ocorra falha
+        sa.Column("source", sa.Text(), nullable=False),  # Origem dos dados ingestados
+        sa.Column(
+            "status", sa.Text(), nullable=False
+        ),  # Status do lote (ex: success, error, running)
+        sa.Column("started_at", sa.DateTime(timezone=True), nullable=False),  # Data/hora de início
+        sa.Column(
+            "finished_at", sa.DateTime(timezone=True), nullable=True
+        ),  # Data/hora de conclusão
+        sa.Column(
+            "rows_processed", sa.BigInteger(), nullable=False, server_default="0"
+        ),  # Total processado
+        sa.Column(
+            "rows_inserted", sa.BigInteger(), nullable=False, server_default="0"
+        ),  # Linhas inseridas
+        sa.Column(
+            "rows_updated", sa.BigInteger(), nullable=False, server_default="0"
+        ),  # Linhas atualizadas
+        sa.Column("error_message", sa.Text(), nullable=True),  # Mensagem de erro caso ocorra falha
     )
 
 

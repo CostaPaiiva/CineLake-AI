@@ -29,4 +29,4 @@ def test_extrair_zip(tmp_path: Path) -> None:
     assert (destino / "arquivo_teste.txt").exists()
 
     # Verifica se o conteúdo do arquivo extraído é exatamente o que colocamos nele
-    assert (destino / "arquivo_teste.txt").read_text(encoding="utf-8") == "conteúdo"
+    assert (destino / "arquivo_teste.txt").read_text(encoding="utf-8") == "conteúdo"

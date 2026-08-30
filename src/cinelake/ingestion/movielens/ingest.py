@@ -21,31 +21,31 @@ logger = logging.getLogger(__name__)
 TABELA_MOVIES = table(
     "movies",
     column("movie_id"),  # Coluna ID do filme
-    column("title"),     # Coluna Título
-    column("genres"),    # Coluna Gêneros
+    column("title"),  # Coluna Título
+    column("genres"),  # Coluna Gêneros
 )
 
 TABELA_RATINGS = table(
     "ratings",
-    column("user_id"),   # Coluna ID do usuário
+    column("user_id"),  # Coluna ID do usuário
     column("movie_id"),  # Coluna ID do filme
-    column("rating"),    # Coluna Nota da avaliação
-    column("ts"),        # Coluna Timestamp da avaliação
+    column("rating"),  # Coluna Nota da avaliação
+    column("ts"),  # Coluna Timestamp da avaliação
 )
 
 TABELA_TAGS = table(
     "tags",
-    column("user_id"),   # Coluna ID do usuário
+    column("user_id"),  # Coluna ID do usuário
     column("movie_id"),  # Coluna ID do filme
-    column("tag"),       # Coluna Texto da tag
-    column("ts"),        # Coluna Timestamp da tag
+    column("tag"),  # Coluna Texto da tag
+    column("ts"),  # Coluna Timestamp da tag
 )
 
 TABELA_LINKS = table(
     "links",
     column("movie_id"),  # Coluna ID do filme no MovieLens
-    column("imdb_id"),   # Coluna ID correspondente no IMDb
-    column("tmdb_id"),   # Coluna ID correspondente no TMDb
+    column("imdb_id"),  # Coluna ID correspondente no IMDb
+    column("tmdb_id"),  # Coluna ID correspondente no TMDb
 )
 
 
@@ -351,4 +351,3 @@ def ingerir_movielens(diretorio_dados: Path) -> dict[str, int]:
         "rows_processed": total_processado,
         "rows_inserted": total_inserido,
     }
-

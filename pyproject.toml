@@ -51,6 +51,7 @@ exclude = [".venv", "build", "dist"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "N", "W", "UP", "B", "SIM"]
+ignore = ["E501"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["cinelake"]

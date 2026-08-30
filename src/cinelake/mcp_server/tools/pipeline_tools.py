@@ -109,4 +109,3 @@ def registrar_ferramentas(server: FastMCP) -> None:
                 "error_message": linha[8],
             }
         return str(resultado)
-

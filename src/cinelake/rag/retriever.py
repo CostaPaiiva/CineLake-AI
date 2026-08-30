@@ -3,15 +3,19 @@
 
 # Importa o módulo nativo de logging para registro de mensagens de log.
 import logging
-# Importa o tipo Any do módulo typing para anotações de tipos genéricos.
-from typing import Any
 
-# Importa a classe SentenceTransformer da biblioteca sentence_transformers para geração de vetores de embeddings.
+# Importa o tipo Any do módulo typing para anotações de tipos genéricos.
+from typing import Any, cast
+
+# Importa a classe SentenceTransformer da biblioteca sentence_transformers
+# para geração de vetores de embeddings.
 from sentence_transformers import SentenceTransformer
+
 # Importa a função text do SQLAlchemy para construir consultas SQL em texto bruto.
 from sqlalchemy import text
 
-# Importa a função get_engine do módulo de banco de dados do CineLake para obter a conexão/engine da base de dados.
+# Importa a função get_engine do módulo de banco de dados do CineLake
+# para obter a conexão/engine da base de dados.
 from cinelake.db import get_engine
 
 # Define o logger para este arquivo utilizando o nome do módulo atual.
@@ -29,8 +33,9 @@ def gerar_embedding(pergunta: str) -> list[float]:
     """Gera embedding normalizado para a pergunta."""
     # Gera os vetores numéricos (embeddings) normalizados a partir do texto da pergunta.
     embedding = MODELO.encode(pergunta, normalize_embeddings=True)
-    # Converte o array NumPy retornado pelo modelo para uma lista padrão de números flutuantes e a retorna.
-    return embedding.tolist()
+    # Converte o array NumPy retornado pelo modelo para uma lista padrão de números flutuantes
+    # e a retorna.
+    return cast(list[float], embedding.tolist())
 
 
 # Define a função para realizar a busca por documentos mais similares no pgvector.
@@ -44,7 +49,8 @@ def buscar_documentos_similares(pergunta: str, top_k: int = 5) -> list[dict[str,
 
     # Comentário explicativo sobre o cálculo de similaridade de cosseno com o operador do pgvector.
     # Consulta por similaridade de cosseno (1 - <=>)
-    # Define a query SQL para selecionar dados da tabela rag_documents e calcular a similaridade de cosseno.
+    # Define a query SQL para selecionar dados da tabela rag_documents e calcular
+    # a similaridade de cosseno.
     query = text("""
         SELECT titulo, conteudo, fonte, metadados,
                1 - (embedding <=> :embedding) AS similaridade
@@ -55,7 +61,8 @@ def buscar_documentos_similares(pergunta: str, top_k: int = 5) -> list[dict[str,
 
     # Abre um bloco de conexão com o banco de dados usando gerenciador de contexto (with).
     with engine.connect() as conn:
-        # Executa a instrução SQL passando os parâmetros do embedding e limite (top_k), trazendo todos os resultados.
+        # Executa a instrução SQL passando os parâmetros do embedding e limite (top_k),
+        # trazendo todos os resultados.
         resultado = conn.execute(
             query,
             {"embedding": embedding, "top_k": top_k},
@@ -65,7 +72,8 @@ def buscar_documentos_similares(pergunta: str, top_k: int = 5) -> list[dict[str,
     documentos = []
     # Itera sobre cada linha retornada pela consulta no banco de dados.
     for linha in resultado:
-        # Adiciona um dicionário formatado à lista de documentos com as informações recuperadas da linha.
+        # Adiciona um dicionário formatado à lista de documentos com as informações
+        # recuperadas da linha.
         documentos.append(
             {
                 # Atribui o título do documento (coluna 0 do resultado).

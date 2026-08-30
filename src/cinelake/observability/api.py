@@ -48,4 +48,3 @@ def freshness() -> dict[str, Any]:
     except Exception as exc:
         logger.exception("Erro ao coletar freshness")
         raise HTTPException(status_code=500, detail=str(exc)) from exc
-

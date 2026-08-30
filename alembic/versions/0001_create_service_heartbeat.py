@@ -5,6 +5,7 @@ Revises: None (Esta é a migração inicial)
 Create Date: 2026-08-20
 
 """
+
 from collections.abc import Sequence
 
 import sqlalchemy as sa
@@ -30,11 +31,12 @@ def upgrade() -> None:
         "service_heartbeat",
         sa.Column("id", sa.Integer(), primary_key=True, autoincrement=True),
         sa.Column("service_name", sa.String(length=100), nullable=False),
-        sa.Column("heartbeat_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
+        sa.Column(
+            "heartbeat_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False
+        ),
     )
 
 
 def downgrade() -> None:
-    """Desfaz a migração removendo (dropando) a tabela 'service_heartbeat' do banco de dados.
-    """
+    """Desfaz a migração removendo (dropando) a tabela 'service_heartbeat' do banco de dados."""
     op.drop_table("service_heartbeat")

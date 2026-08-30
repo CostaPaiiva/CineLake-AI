@@ -8,7 +8,6 @@ from pathlib import Path
 from typing import Any
 
 from sentence_transformers import SentenceTransformer
-
 from sqlalchemy import Connection, text
 
 from cinelake.db import get_engine
@@ -45,7 +44,6 @@ def _gerar_embedding(conteudo: str) -> list[float]:
     """
     embedding = MODELO.encode(conteudo, normalize_embeddings=True)
     return [float(x) for x in embedding.tolist()]
-
 
 
 def _registrar_batch(

@@ -61,7 +61,9 @@ def main() -> None:
     parser_ingest_tmdb.set_defaults(func=_cmd_ingest_tmdb)
 
     # 4. Subcomando: ingest-datalake-bronze (Ingestão de dados brutos no Data Lake bronze)
-    parser_bronze = subparsers.add_parser("ingest-datalake-bronze", help="Ingere dados brutos no Data Lake bronze")
+    parser_bronze = subparsers.add_parser(
+        "ingest-datalake-bronze", help="Ingere dados brutos no Data Lake bronze"
+    )
     parser_bronze.add_argument(
         "--movielens-dir",
         type=Path,
@@ -77,7 +79,9 @@ def main() -> None:
     parser_bronze.set_defaults(func=_cmd_ingest_bronze)
 
     # 5. Subcomando: run-metrics-exporter (Inicia o servidor de métricas Prometheus)
-    parser_metrics = subparsers.add_parser("run-metrics-exporter", help="Inicia exporter de métricas Prometheus")
+    parser_metrics = subparsers.add_parser(
+        "run-metrics-exporter", help="Inicia exporter de métricas Prometheus"
+    )
     parser_metrics.add_argument("--port", type=int, default=8000, help="Porta do exporter")
     parser_metrics.set_defaults(func=_cmd_run_metrics_exporter)
 
@@ -102,7 +106,9 @@ def main() -> None:
     parser_rag.set_defaults(func=_cmd_collect_rag)
 
     # 8. Subcomando: index-rag-documents (Indexa documentos RAG e gera embeddings no pgvector)
-    parser_index = subparsers.add_parser("index-rag-documents", help="Indexa documentos RAG no pgvector")
+    parser_index = subparsers.add_parser(
+        "index-rag-documents", help="Indexa documentos RAG no pgvector"
+    )
     parser_index.add_argument(
         "--input-dir",
         type=Path,
@@ -240,7 +246,3 @@ def _cmd_serve_rag_mcp(args: argparse.Namespace) -> None:
 # Ponto de entrada padrão para execução via módulo (ex: python -m cinelake)
 if __name__ == "__main__":
     main()
-
-
-
-

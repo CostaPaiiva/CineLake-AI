@@ -19,7 +19,7 @@ def test_conexao_minio():
     resposta = cliente.list_buckets()
 
     # Extrai apenas os nomes dos buckets da resposta da API
-    nomes = [b['Name'] for b in resposta['Buckets']]
+    nomes = [b["Name"] for b in resposta["Buckets"]]
 
     # Valida se o bucket padrão configurado está presente na lista de buckets do MinIO
     assert settings.minio_bucket in nomes

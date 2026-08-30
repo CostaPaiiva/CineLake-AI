@@ -3,18 +3,21 @@
 
 # Importa o módulo nativo de logging para emissão de mensagens de diagnóstico e erro.
 import logging
+
 # Importa o tipo Any da biblioteca typing para tipagem genérica.
 from typing import Any
 
 # Importa a classe principal FastAPI e a exceção HTTPException para tratamento de erros HTTP.
 from fastapi import FastAPI, HTTPException
+
 # Importa BaseModel do Pydantic para validação e definição dos esquemas das requisições.
 from pydantic import BaseModel
 
-# Importa a função de busca por similaridade vetorial do módulo retriever.
-from cinelake.rag.retriever import buscar_documentos_similares
 # Importa a função de invocação de ferramentas MCP do cliente MCP local.
 from cinelake.rag.mcp_client import invocar_ferramenta_mcp
+
+# Importa a função de busca por similaridade vetorial do módulo retriever.
+from cinelake.rag.retriever import buscar_documentos_similares
 
 # Define a instância do logger associada a este módulo.
 logger = logging.getLogger(__name__)
@@ -24,7 +27,7 @@ app = FastAPI(title="CineLake AI - RAG + MCP API", version="0.1.0")
 
 
 # Define a estrutura de dados de entrada da requisição usando Pydantic.
-class Pergunta(BaseModel):
+class Pergunta(BaseModel):  # type: ignore[misc]
     # Docstring da classe Pergunta detalhando sua finalidade.
     """Modelo de entrada para a API."""
 
@@ -138,4 +141,4 @@ def ask(pergunta: Pergunta) -> dict[str, Any]:
         # Grava o log detalhado de exceção contendo a pilha de erros (traceback).
         logger.exception("Erro ao processar pergunta")
         # Lança a exceção do FastAPI retornando código HTTP 500 com a mensagem de erro.
-        raise HTTPException(status_code=500, detail=str(exc))
+        raise HTTPException(status_code=500, detail=str(exc)) from exc

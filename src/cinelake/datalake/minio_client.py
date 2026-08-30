@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 def criar_cliente_minio() -> BaseClient:
     """Cria e retorna um cliente boto3 configurado para se conectar à API do MinIO.
-    
+
     A conexão simula a API do Amazon S3 apontando para o endpoint do MinIO.
     """
     cliente = boto3.client(
@@ -36,7 +36,7 @@ def criar_cliente_minio() -> BaseClient:
 
 def garantir_bucket(cliente: BaseClient, bucket: str) -> None:
     """Verifica se um bucket (diretório raiz do S3) existe no MinIO e o cria caso não exista.
-    
+
     Args:
         cliente: A instância de conexão ativa com o MinIO.
         bucket: Nome do bucket que deseja verificar ou criar.
@@ -58,7 +58,7 @@ def fazer_upload_parquet(
     arquivo_local: Path,
 ) -> None:
     """Realiza o upload de um arquivo local (geralmente formato Parquet) para o MinIO.
-    
+
     Args:
         cliente: A instância de conexão ativa com o MinIO.
         bucket: O nome do bucket de destino.
