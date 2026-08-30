@@ -2,7 +2,7 @@
 
 import logging
 
-from mcp.server import Server
+from mcp.server.fastmcp import FastMCP
 from sqlalchemy import inspect
 
 from cinelake.db import get_engine
@@ -19,7 +19,7 @@ LINHAGEM: dict[str, list[str]] = {
 }
 
 
-def registrar_ferramentas(server: Server) -> None:
+def registrar_ferramentas(server: FastMCP) -> None:
     """Registra as ferramentas de consulta de esquema de tabela e linhagem de dados no servidor MCP.
 
     Args:

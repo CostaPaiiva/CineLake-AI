@@ -2,7 +2,7 @@
 
 import logging
 
-from mcp.server import Server
+from mcp.server.fastmcp import FastMCP
 from sqlalchemy import text
 
 from cinelake.db import get_engine
@@ -10,7 +10,7 @@ from cinelake.db import get_engine
 logger = logging.getLogger(__name__)
 
 
-def registrar_ferramentas(server: Server) -> None:
+def registrar_ferramentas(server: FastMCP) -> None:
     """Registra as ferramentas de consulta de qualidade de dados no servidor MCP.
 
     Args:

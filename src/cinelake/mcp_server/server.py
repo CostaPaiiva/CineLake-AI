@@ -2,8 +2,7 @@
 
 import logging
 
-from mcp.server import Server
-from mcp.server.stdio import stdio_server
+from mcp.server.fastmcp import FastMCP
 
 from cinelake.mcp_server.tools import (
     health_tools,
@@ -15,13 +14,13 @@ from cinelake.mcp_server.tools import (
 logger = logging.getLogger(__name__)
 
 
-def criar_servidor() -> Server:
+def criar_servidor() -> FastMCP:
     """Cria e inicializa o servidor MCP integrando os conjuntos de ferramentas da plataforma.
 
     Returns:
-        Server: Instância do servidor MCP com saúde, pipelines, qualidade e esquemas.
+        FastMCP: Instância do servidor MCP com saúde, pipelines, qualidade e esquemas.
     """
-    app = Server("cinelake-mcp")
+    app = FastMCP("cinelake-mcp")
 
     # Registra todos os grupos de ferramentas de observabilidade e dados
     health_tools.registrar_ferramentas(app)
@@ -35,12 +34,7 @@ def criar_servidor() -> Server:
 async def executar_servidor() -> None:
     """Executa o loop de eventos assíncrono do servidor MCP utilizando o transporte via stdio."""
     app = criar_servidor()
-    async with stdio_server() as (read_stream, write_stream):
-        await app.run(
-            read_stream,
-            write_stream,
-            app.create_initialization_options(),
-        )
+    await app.run_stdio_async()
 
 
 # Ponto de entrada padrão para execução direta do script via Python

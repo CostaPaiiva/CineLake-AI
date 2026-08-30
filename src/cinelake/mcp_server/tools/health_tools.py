@@ -2,14 +2,14 @@
 
 import logging
 
-from mcp.server import Server
+from mcp.server.fastmcp import FastMCP
 
 from cinelake.observability.health import coletar_status_geral, obter_ultimas_execucoes
 
 logger = logging.getLogger(__name__)
 
 
-def registrar_ferramentas(server: Server) -> None:
+def registrar_ferramentas(server: FastMCP) -> None:
     """Registra as ferramentas de consulta de saúde da plataforma no servidor MCP.
 
     Args:
