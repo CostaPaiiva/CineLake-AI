@@ -58,9 +58,15 @@ def validar_ratings() -> dict[str, Any]:
                 "batch_request": batch_request.to_dict(),
                 "expectation_suite_name": "ratings_suite",
             }
-        ],
     }
-    contexto.add_checkpoint(**checkpoint_config)
+    if hasattr(contexto, "add_or_update_checkpoint"):
+        contexto.add_or_update_checkpoint(**checkpoint_config)
+    elif hasattr(contexto, "checkpoints") and hasattr(contexto.checkpoints, "add_or_update"):
+        from great_expectations.checkpoint import SimpleCheckpoint
+        cp = SimpleCheckpoint(name="ratings_checkpoint", data_context=contexto, **checkpoint_config)
+        contexto.checkpoints.add_or_update(cp)
+    else:
+        contexto.add_checkpoint(**checkpoint_config)
 
     # Executa o checkpoint e obtém os resultados da suíte
     resultados = contexto.run_checkpoint(checkpoint_name="ratings_checkpoint")

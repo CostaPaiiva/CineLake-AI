@@ -34,7 +34,15 @@ def configurar_ge(contexto: BaseDataContext) -> None:
             }
         },
     }
-    contexto.add_datasource(**datasource_config)
+    if hasattr(contexto, "sources") and hasattr(contexto.sources, "add_postgres"):
+        try:
+            contexto.sources.add_postgres(name="postgres_ratings", connection_string=settings.database_url)
+        except Exception:
+            pass
+    elif hasattr(contexto, "add_or_update_datasource"):
+        contexto.add_or_update_datasource(**datasource_config)
+    else:
+        contexto.add_datasource(**datasource_config)
 
     # Carrega a suíte de expectativas ou cria uma nova se estiver vazia
     suite = contexto.get_expectation_suite("ratings_suite")
