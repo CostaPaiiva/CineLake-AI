@@ -1,0 +1,29 @@
+{
+  "perguntas": [
+    {
+      "id": "q1",
+      "texto": "Qual pipeline falhou hoje?",
+      "documentos_relevantes": ["Runbook: pipeline-failure"]
+    },
+    {
+      "id": "q2",
+      "texto": "Como verificar a saúde da plataforma?",
+      "documentos_relevantes": ["ADR: remote-vps-development", "Runbook: pipeline-failure"]
+    },
+    {
+      "id": "q3",
+      "texto": "Qual é o schema da tabela ratings?",
+      "documentos_relevantes": ["Schema da tabela: ratings"]
+    },
+    {
+      "id": "q4",
+      "texto": "O que fazer se o pipeline de ingestão falhar?",
+      "documentos_relevantes": ["Runbook: pipeline-failure"]
+    },
+    {
+      "id": "q5",
+      "texto": "Quais são os contratos de dados de ratings?",
+      "documentos_relevantes": ["Contrato de dados: ratings_contract"]
+    }
+  ]
+}
