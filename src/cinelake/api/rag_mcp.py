@@ -1,144 +1,114 @@
-# Módulo de API FastAPI que integra busca vetorial (RAG) e chamadas de ferramentas (MCP).
 """API FastAPI que combina RAG e MCP para responder perguntas."""
 
-# Importa o módulo nativo de logging para emissão de mensagens de diagnóstico e erro.
-import logging
+import logging  # Importa o módulo nativo para geração de logs de execução e erros.
+import time  # Importa o módulo de manipulação de tempo para cálculo de latência.
+from typing import Any  # Importa o tipo genérico Any para anotações de tipagem.
 
-# Importa o tipo Any da biblioteca typing para tipagem genérica.
-from typing import Any
+from fastapi import FastAPI, HTTPException  # Importa a classe FastAPI para criação da API REST e HTTPException para tratamento de erros.
+from pydantic import BaseModel  # Importa BaseModel do Pydantic para validação e serialização dos dados de entrada.
 
-# Importa a classe principal FastAPI e a exceção HTTPException para tratamento de erros HTTP.
-from fastapi import FastAPI, HTTPException
+from cinelake.rag.mcp_client import invocar_ferramenta_mcp  # Importa a função que despacha chamadas para o servidor MCP local.
+from cinelake.rag.observability import obter_metricas_rag, registrar_consulta  # Importa funções de observabilidade e métricas do RAG.
+from cinelake.rag.retriever import buscar_documentos_similares  # Importa a função que realiza a busca semântica por similaridade de embeddings.
 
-# Importa BaseModel do Pydantic para validação e definição dos esquemas das requisições.
-from pydantic import BaseModel
+logger = logging.getLogger(__name__)  # Instancia o logger específico deste módulo.
 
-# Importa a função de invocação de ferramentas MCP do cliente MCP local.
-from cinelake.rag.mcp_client import invocar_ferramenta_mcp
-
-# Importa a função de busca por similaridade vetorial do módulo retriever.
-from cinelake.rag.retriever import buscar_documentos_similares
-
-# Define a instância do logger associada a este módulo.
-logger = logging.getLogger(__name__)
-
-# Inicializa a aplicação FastAPI configurando o título e a versão da API.
-app = FastAPI(title="CineLake AI - RAG + MCP API", version="0.1.0")
+app = FastAPI(title="CineLake AI - RAG + MCP API", version="0.2.0")  # Inicializa o aplicativo FastAPI definindo o título e versão 0.2.0.
 
 
-# Define a estrutura de dados de entrada da requisição usando Pydantic.
-class Pergunta(BaseModel):  # type: ignore[misc]
-    # Docstring da classe Pergunta detalhando sua finalidade.
-    """Modelo de entrada para a API."""
+class Pergunta(BaseModel):  # Define o schema Pydantic para o payload JSON recebido nas requisições da rota /ask.
+    """Modelo de entrada para a API."""  # Docstring descrevendo o modelo de dados de entrada da pergunta.
 
-    # Campo obrigatório contendo o texto da pergunta do usuário.
-    texto: str
-    # Campo opcional para definir o limite de documentos parecidos (padrão é 5).
-    top_k: int = 5
-    # Campo opcional para lista de ferramentas adicionais solicitadas pelo cliente (padrão lista vazia).
-    incluir_ferramentas: list[str] = []
+    texto: str  # Campo obrigatório contendo o texto da pergunta submetida pelo usuário.
+    top_k: int = 5  # Quantidade máxima de documentos similares a recuperar no RAG (padrão 5).
+    incluir_ferramentas: list[str] = []  # Lista opcional de nomes de ferramentas MCP a serem consideradas.
 
 
-# Define a função utilitária interna para detectar qual ferramenta MCP deve ser chamada com base na pergunta.
-def _detectar_ferramenta(pergunta: str) -> str | None:
-    # Docstring explicativa informando o mapeamento de perguntas para ferramentas MCP.
-    """
-    Mapeia a pergunta para uma ferramenta MCP apropriada.
-
-    Retorna o nome da ferramenta ou None se nenhuma se aplicar.
-    """
-    # Converte o texto da pergunta para letras minúsculas a fim de facilitar a busca de palavras-chave.
-    p = pergunta.lower()
-    # Verifica se alguma palavra relativa à saúde da plataforma está presente na pergunta.
-    if any(palavra in p for palavra in ["saúde", "status", "health", "plataforma"]):
-        # Retorna o nome da ferramenta que busca a saúde da plataforma.
-        return "get_platform_health"
-    # Verifica se alguma palavra relativa ao status de pipelines está presente na pergunta.
-    elif any(palavra in p for palavra in ["pipeline", "falhou", "execução"]):
-        # Retorna o nome da ferramenta que verifica o status do pipeline.
-        return "get_pipeline_status"
-    # Verifica se alguma palavra relativa ao atraso ou atualização de dados está presente.
-    elif any(palavra in p for palavra in ["freshness", "atrasado", "atrasada"]):
-        # Retorna o nome da ferramenta que avalia a atualização (freshness) dos dados.
-        return "get_data_freshness"
-    # Verifica se alguma palavra relativa a falhas de qualidade dos dados está presente.
-    elif any(palavra in p for palavra in ["qualidade", "falhas"]):
-        # Retorna o nome da ferramenta que consulta falhas na qualidade dos dados.
-        return "get_data_quality_failures"
-    # Verifica se alguma palavra relativa ao esquema ou tabelas do banco está presente.
-    elif any(palavra in p for palavra in ["schema", "tabela"]):
-        # Retorna o nome da ferramenta que obtém o esquema da tabela.
-        return "get_table_schema"
-    # Retorna None caso nenhuma palavra-chave corresponda às ferramentas conhecidas.
-    return None
+def _detectar_ferramenta(pergunta: str) -> str | None:  # Define a função auxiliar para mapeamento baseado em palavras-chave da pergunta.
+    """Mapeia a pergunta para uma ferramenta MCP apropriada."""  # Docstring descrevendo a detecção de intenção para ferramentas MCP.
+    p = pergunta.lower()  # Converte a pergunta inteira para minúsculas para busca insensível a maiúsculas/minúsculas.
+    if any(palavra in p for palavra in ["saúde", "status", "health", "plataforma"]):  # Verifica se trata de saúde global da plataforma.
+        return "get_platform_health"  # Retorna o identificador da ferramenta MCP de saúde da plataforma.
+    elif any(palavra in p for palavra in ["pipeline", "falhou", "execução"]):  # Verifica se trata de status de execução de pipelines.
+        return "get_pipeline_status"  # Retorna o identificador da ferramenta MCP de status de pipelines.
+    elif any(palavra in p for palavra in ["freshness", "atrasado", "atrasada"]):  # Verifica se trata de atraso ou defasagem de dados.
+        return "get_data_freshness"  # Retorna o identificador da ferramenta MCP de freshness de tabelas.
+    elif any(palavra in p for palavra in ["qualidade", "falhas"]):  # Verifica se trata de falhas e checagens de qualidade de dados.
+        return "get_data_quality_failures"  # Retorna o identificador da ferramenta MCP de qualidade de dados.
+    elif any(palavra in p for palavra in ["schema", "tabela"]):  # Verifica se trata de estrutura ou esquema de tabelas do banco.
+        return "get_table_schema"  # Retorna o identificador da ferramenta MCP de schemas de tabelas.
+    return None  # Retorna None caso nenhuma correspondência com ferramentas seja encontrada.
 
 
-# Define a rota POST '/ask' da API FastAPI para responder perguntas combinando RAG e MCP.
-@app.post("/ask", summary="Pergunta à plataforma combinando RAG e MCP")
-def ask(pergunta: Pergunta) -> dict[str, Any]:
-    # Docstring detalhando o fluxo do endpoint /ask.
-    """Recebe pergunta, recupera documentos e invoca ferramentas MCP."""
-    # Bloco try para capturar eventuais exceções ocorridas durante o processamento.
-    try:
-        # Comentário indicando a primeira etapa do fluxo.
+@app.post("/ask", summary="Pergunta à plataforma combinando RAG e MCP")  # Declara o endpoint POST na rota /ask da aplicação FastAPI.
+def ask(pergunta: Pergunta) -> dict[str, Any]:  # Define a função controladora da rota /ask que recebe o objeto Pergunta.
+    """Recebe pergunta, recupera documentos e invoca ferramentas MCP."""  # Docstring da rota /ask.
+    inicio = time.time()  # Registra o timestamp inicial para medição de latência da resposta.
+    status_code = 200  # Define o código de status HTTP padrão da operação como 200 (OK).
+    erro = None  # Inicializa a variável de registro de erros como None.
+    documentos = []  # Inicializa a lista de documentos recuperados vazia.
+    ferramenta = None  # Inicializa o nome da ferramenta como None.
+    resultado_ferramenta = None  # Inicializa o resultado retornado pela ferramenta como None.
+
+    try:  # Inicia o bloco protegido de execução do fluxo de RAG e MCP.
         # 1. Recupera documentos relevantes via RAG
-        # Realiza a busca vetorial por documentos similares à pergunta do usuário.
-        documentos = buscar_documentos_similares(pergunta.texto, top_k=pergunta.top_k)
-        # Formata os documentos recuperados criando uma lista de resumos truncados.
-        contexto_docs = [
-            # Cria um dicionário para cada documento com título, fonte, score de similaridade e trecho inicial.
-            {
-                # Atribui o título do documento.
-                "titulo": doc["titulo"],
-                # Atribui a fonte de origem do documento.
-                "fonte": doc["fonte"],
-                # Atribui o nível de similaridade encontrado.
-                "similaridade": doc["similaridade"],
-                # Limita o trecho do conteúdo aos primeiros 500 caracteres. # limitar tamanho
-                "trecho": doc["conteudo"][:500],
-            }
-            # Itera sobre cada documento da lista retornada pelo retriever.
-            for doc in documentos
-        ]
+        documentos = buscar_documentos_similares(pergunta.texto, top_k=pergunta.top_k)  # Executa a busca vetorial no pgvector.
+        contexto_docs = [  # Monta a lista formatada de trechos e metadados dos documentos recuperados.
+            {  # Abre dicionário para cada documento individual recuperado.
+                "titulo": doc["titulo"],  # Título do documento recuperado.
+                "fonte": doc["fonte"],  # Fonte de origem do documento (ADR, Runbook, Schema, etc.).
+                "similaridade": doc["similaridade"],  # Score de similaridade de cosseno retornado pelo embedding.
+                "trecho": doc["conteudo"][:500],  # Recorta os primeiros 500 caracteres do conteúdo textual do documento.
+            }  # Fecha o dicionário do documento.
+            for doc in documentos  # Itera sobre a lista de documentos retornada pela busca vetorial.
+        ]  # Fecha a compreensão de lista.
 
-        # Comentário indicando a segunda etapa do fluxo.
         # 2. Detecta ferramenta a ser chamada
-        # Tenta detectar automaticamente uma ferramenta MCP adequada para a pergunta.
-        ferramenta = _detectar_ferramenta(pergunta.texto)
-        # Inicializa a variável do resultado da ferramenta como None.
-        resultado_ferramenta = None
-        # Verifica se alguma ferramenta foi identificada para execução.
-        if ferramenta:
-            # Invoca a ferramenta MCP identificada e obtém o resultado.
-            resultado_ferramenta = invocar_ferramenta_mcp(ferramenta)
+        ferramenta = _detectar_ferramenta(pergunta.texto)  # Detecta se alguma ferramenta MCP deve ser chamada para a pergunta.
+        if ferramenta:  # Se uma ferramenta válida foi identificada para a pergunta.
+            resultado_ferramenta = invocar_ferramenta_mcp(ferramenta)  # Executa a chamada à ferramenta via cliente MCP.
 
-        # Comentário indicando a terceira etapa do fluxo.
         # 3. Monta contexto combinado
-        # Monta o objeto de contexto unificado reunindo a pergunta, documentos e resultado da ferramenta.
-        contexto = {
-            # Armazena a pergunta original do usuário.
-            "pergunta": pergunta.texto,
-            # Armazena a lista de documentos recuperados via RAG.
-            "documentos_recuperados": contexto_docs,
-            # Armazena o nome da ferramenta MCP utilizada (ou None).
-            "ferramenta_utilizada": ferramenta,
-            # Armazena a resposta retornada pela ferramenta MCP (ou None).
-            "resultado_ferramenta": resultado_ferramenta,
-        }
+        contexto = {  # Monta o dicionário com o contexto completo pronto para o LLM.
+            "pergunta": pergunta.texto,  # Pergunta original submetida pelo usuário.
+            "documentos_recuperados": contexto_docs,  # Lista com os documentos de contexto relevantes encontrados.
+            "ferramenta_utilizada": ferramenta,  # Nome da ferramenta MCP invocada.
+            "resultado_ferramenta": resultado_ferramenta,  # Dados retornados pela ferramenta MCP em tempo real.
+        }  # Fecha o dicionário de contexto consolidado.
 
-        # Retorna a resposta HTTP contendo o status ok, o contexto consolidado e uma mensagem explicativa.
-        return {
-            # Status de sucesso do processamento.
-            "status": "ok",
-            # Objeto de contexto montado para a próxima fase.
-            "contexto": contexto,
-            # Mensagem indicando que o contexto está pronto para consumo por modelos LLM.
-            "mensagem": "Contexto pronto para geração por LLM (não implementado nesta fase).",
-        }
+        return {  # Retorna a resposta da requisição com status de sucesso.
+            "status": "ok",  # Status da resposta.
+            "contexto": contexto,  # Payload consolidado do contexto recuperado.
+            "mensagem": "Contexto pronto para geração por LLM (não implementado nesta fase).",  # Mensagem explicativa.
+        }  # Fecha a estrutura do retorno.
 
-    # Captura qualquer erro/exceção genérica durante a execução da rota.
-    except Exception as exc:
-        # Grava o log detalhado de exceção contendo a pilha de erros (traceback).
-        logger.exception("Erro ao processar pergunta")
-        # Lança a exceção do FastAPI retornando código HTTP 500 com a mensagem de erro.
-        raise HTTPException(status_code=500, detail=str(exc)) from exc
+    except Exception as exc:  # Captura qualquer exceção durante a execução do pipeline.
+        logger.exception("Erro ao processar pergunta")  # Registra no log de aplicação a exceção completa com traceback.
+        status_code = 500  # Atualiza o status HTTP para 500 (Internal Server Error).
+        erro = str(exc)  # Converte a exceção para texto para registro no log de observabilidade.
+        raise HTTPException(status_code=500, detail=str(exc))  # Relança como erro HTTP para resposta ao cliente da API.
+
+    finally:  # Bloco executado obrigatoriamente tanto em caso de sucesso quanto de falha.
+        latencia_ms = (time.time() - inicio) * 1000  # Calcula o tempo total decorrido em milissegundos.
+        try:  # Bloco protegido para gravação do log de auditoria no banco de dados.
+            registrar_consulta(  # Invoca a função que grava a consulta na tabela rag_query_log.
+                pergunta=pergunta.texto,  # Texto da pergunta recebida.
+                documentos_recuperados=documentos,  # Documentos encontrados pelo retriever.
+                ferramenta_mcp=ferramenta,  # Identificador da ferramenta utilizada.
+                resultado_ferramenta=resultado_ferramenta,  # Resposta fornecida pela ferramenta.
+                latencia_ms=latencia_ms,  # Latência total calculada em milissegundos.
+                status_code=status_code,  # Código HTTP final da requisição.
+                erro=erro,  # Mensagem de erro capturada ou None.
+            )  # Fecha a chamada de registrar_consulta.
+        except Exception as log_exc:  # Captura falha no registro de auditoria para não quebrar a requisição principal.
+            logger.error("Falha ao registrar log RAG: %s", log_exc)  # Emite mensagem de erro no log.
+
+
+@app.get("/rag/metrics", summary="Métricas do uso do RAG")  # Declara o endpoint GET na rota /rag/metrics para observabilidade.
+def rag_metrics() -> dict[str, Any]:  # Define a função controladora que retorna estatísticas agregadas do RAG.
+    """Retorna métricas agregadas do RAG."""  # Docstring da rota /rag/metrics.
+    try:  # Bloco protegido para extração das métricas.
+        return obter_metricas_rag()  # Executa as agregações e retorna o dicionário com métricas e histórico.
+    except Exception as exc:  # Captura falhas ao consultar métricas.
+        logger.exception("Erro ao obter métricas RAG")  # Registra exceção no log.
+        raise HTTPException(status_code=500, detail=str(exc))  # Retorna código HTTP 500 com a mensagem do erro.
