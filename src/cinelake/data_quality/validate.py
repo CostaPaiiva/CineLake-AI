@@ -58,6 +58,7 @@ def validar_ratings() -> dict[str, Any]:
                 "batch_request": batch_request.to_dict(),
                 "expectation_suite_name": "ratings_suite",
             }
+        ],
     }
     if hasattr(contexto, "add_or_update_checkpoint"):
         contexto.add_or_update_checkpoint(**checkpoint_config)
