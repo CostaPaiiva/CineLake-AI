@@ -7,28 +7,25 @@ import logging
 from typing import Any
 
 from great_expectations.core.batch import RuntimeBatchRequest
-from great_expectations.data_context import BaseDataContext
-from great_expectations.data_context.types.base import (
-    DataContextConfig,
-    FilesystemStoreBackendDefaults,
-)
+import great_expectations as ge
+
+try:
+    from great_expectations.data_context import AbstractDataContext as BaseDataContext
+except ImportError:
+    from great_expectations.data_context import BaseDataContext  # type: ignore[attr-defined]
 
 # Configuração do logger do módulo
 logger = logging.getLogger(__name__)
 
 
-def criar_data_context() -> BaseDataContext:
+def criar_data_context() -> Any:
     """
     Cria ou carrega o Data Context do Great Expectations na raiz do projeto.
 
     Returns:
-        BaseDataContext: Instância do contexto do Great Expectations.
+        Any: Instância do contexto do Great Expectations.
     """
-    data_context_config = DataContextConfig(
-        store_backend_defaults=FilesystemStoreBackendDefaults(root_directory="great_expectations"),
-    )
-    contexto = BaseDataContext(project_config=data_context_config)
-    return contexto
+    return ge.get_context(project_root_dir="great_expectations")
 
 
 def validar_ratings() -> dict[str, Any]:

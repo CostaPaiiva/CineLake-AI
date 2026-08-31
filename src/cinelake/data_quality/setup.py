@@ -3,7 +3,10 @@
 # ==============================================================================
 """Configuração inicial do Great Expectations."""
 
-from great_expectations.data_context import BaseDataContext
+try:
+    from great_expectations.data_context import AbstractDataContext as BaseDataContext
+except ImportError:
+    from great_expectations.data_context import BaseDataContext  # type: ignore[attr-defined]
 
 from cinelake.config import settings
 
