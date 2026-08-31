@@ -6,13 +6,8 @@
 import logging
 from typing import Any
 
-from great_expectations.core.batch import RuntimeBatchRequest
 import great_expectations as ge
-
-try:
-    from great_expectations.data_context import AbstractDataContext as BaseDataContext
-except ImportError:
-    from great_expectations.data_context import BaseDataContext  # type: ignore[attr-defined]
+from great_expectations.core.batch import RuntimeBatchRequest
 
 # Configuração do logger do módulo
 logger = logging.getLogger(__name__)

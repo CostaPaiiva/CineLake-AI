@@ -4,12 +4,24 @@ import logging  # Importa o módulo nativo para geração de logs de execução 
 import time  # Importa o módulo de manipulação de tempo para cálculo de latência.
 from typing import Any  # Importa o tipo genérico Any para anotações de tipagem.
 
-from fastapi import FastAPI, HTTPException  # Importa a classe FastAPI para criação da API REST e HTTPException para tratamento de erros.
-from pydantic import BaseModel  # Importa BaseModel do Pydantic para validação e serialização dos dados de entrada.
+from fastapi import (  # Importa a classe FastAPI para criação da API REST e HTTPException para tratamento de erros.
+    FastAPI,
+    HTTPException,
+)
+from pydantic import (
+    BaseModel,  # Importa BaseModel do Pydantic para validação e serialização dos dados de entrada.
+)
 
-from cinelake.rag.mcp_client import invocar_ferramenta_mcp  # Importa a função que despacha chamadas para o servidor MCP local.
-from cinelake.rag.observability import obter_metricas_rag, registrar_consulta  # Importa funções de observabilidade e métricas do RAG.
-from cinelake.rag.retriever import buscar_documentos_similares  # Importa a função que realiza a busca semântica por similaridade de embeddings.
+from cinelake.rag.mcp_client import (
+    invocar_ferramenta_mcp,  # Importa a função que despacha chamadas para o servidor MCP local.
+)
+from cinelake.rag.observability import (  # Importa funções de observabilidade e métricas do RAG.
+    obter_metricas_rag,
+    registrar_consulta,
+)
+from cinelake.rag.retriever import (
+    buscar_documentos_similares,  # Importa a função que realiza a busca semântica por similaridade de embeddings.
+)
 
 logger = logging.getLogger(__name__)  # Instancia o logger específico deste módulo.
 
@@ -86,7 +98,7 @@ def ask(pergunta: Pergunta) -> dict[str, Any]:  # Define a função controladora
         logger.exception("Erro ao processar pergunta")  # Registra no log de aplicação a exceção completa com traceback.
         status_code = 500  # Atualiza o status HTTP para 500 (Internal Server Error).
         erro = str(exc)  # Converte a exceção para texto para registro no log de observabilidade.
-        raise HTTPException(status_code=500, detail=str(exc))  # Relança como erro HTTP para resposta ao cliente da API.
+        raise HTTPException(status_code=500, detail=str(exc)) from exc  # Relança como erro HTTP para resposta ao cliente da API.
 
     finally:  # Bloco executado obrigatoriamente tanto em caso de sucesso quanto de falha.
         latencia_ms = (time.time() - inicio) * 1000  # Calcula o tempo total decorrido em milissegundos.
@@ -111,4 +123,4 @@ def rag_metrics() -> dict[str, Any]:  # Define a função controladora que retor
         return obter_metricas_rag()  # Executa as agregações e retorna o dicionário com métricas e histórico.
     except Exception as exc:  # Captura falhas ao consultar métricas.
         logger.exception("Erro ao obter métricas RAG")  # Registra exceção no log.
-        raise HTTPException(status_code=500, detail=str(exc))  # Retorna código HTTP 500 com a mensagem do erro.
+        raise HTTPException(status_code=500, detail=str(exc)) from exc  # Retorna código HTTP 500 com a mensagem do erro.

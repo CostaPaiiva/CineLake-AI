@@ -2,21 +2,34 @@
 
 import json  # Importa o módulo nativo para manipulação de arquivos no formato JSON.
 import logging  # Importa o módulo nativo para geração de logs de execução e depuração.
-from pathlib import Path  # Importa a classe Path para manipulação orientada a objetos de caminhos de arquivos.
+from datetime import (  # Importa utilitários de data e hora com suporte a fusos horários (UTC).
+    datetime,
+    timezone,
+)
+from pathlib import (
+    Path,  # Importa a classe Path para manipulação orientada a objetos de caminhos de arquivos.
+)
+from typing import Any  # Importa Any para anotações genéricas de tipos.
 
-from cinelake.rag.retriever import buscar_documentos_similares  # Importa a função de busca por similaridade de vetor/documento no RAG.
-from cinelake.db import get_engine  # Importa a função utilitária que obtém a conexão (engine) com o banco de dados SQLAlchemy.
-from sqlalchemy import text  # Importa a função text do SQLAlchemy para execução de queries SQL puras/parametrizadas.
-from datetime import datetime, timezone  # Importa utilitários de data e hora com suporte a fusos horários (UTC).
+from sqlalchemy import (
+    text,  # Importa a função text do SQLAlchemy para execução de queries SQL puras/parametrizadas.
+)
+
+from cinelake.db import (
+    get_engine,  # Importa a função utilitária que obtém a conexão (engine) com o banco de dados SQLAlchemy.
+)
+from cinelake.rag.retriever import (
+    buscar_documentos_similares,  # Importa a função de busca por similaridade de vetor/documento no RAG.
+)
 
 logger = logging.getLogger(__name__)  # Inicializa o logger específico para este módulo usando o nome do arquivo/módulo atual.
 
 
-def carregar_dataset(caminho: Path) -> list[dict]:  # Define a função para carregar a lista de perguntas e gabarito do arquivo JSON.
+def carregar_dataset(caminho: Path) -> list[dict[str, Any]]:  # Define a função para carregar a lista de perguntas e gabarito do arquivo JSON.
     """Carrega o dataset de avaliação."""  # Docstring descrevendo o propósito da função carregar_dataset.
     with caminho.open("r", encoding="utf-8") as f:  # Abre o arquivo especificado em caminho no modo de leitura com codificação UTF-8.
         dados = json.load(f)  # Converte o conteúdo textual do arquivo JSON em um dicionário Python.
-    return dados["perguntas"]  # Retorna apenas a lista associada à chave "perguntas" contida no dicionário carregado.
+    return list(dados["perguntas"])  # Retorna apenas a lista associada à chave "perguntas" contida no dicionário carregado.
 
 
 def calcular_recall_k(relevantes: list[str], recuperados: list[str], k: int) -> float:  # Define a função que calcula a métrica Recall@k.
@@ -41,7 +54,7 @@ def calcular_hit_rate_k(relevantes: list[str], recuperados: list[str], k: int) -
     return bool(set(relevantes) & set(recuperados[:k]))  # Retorna True se houver interseção entre os relevantes e os top-k recuperados, senão False.
 
 
-def avaliar_rag(dataset_path: Path, k: int = 5) -> dict:  # Define a função principal de avaliação do pipeline RAG.
+def avaliar_rag(dataset_path: Path, k: int = 5) -> dict[str, Any]:  # Define a função principal de avaliação do pipeline RAG.
     """
     Executa avaliação do RAG.
 
@@ -56,7 +69,7 @@ def avaliar_rag(dataset_path: Path, k: int = 5) -> dict:  # Define a função pr
 
     perguntas = carregar_dataset(dataset_path)  # Carrega as perguntas e gabarito chamando a função carregar_dataset.
 
-    metricas = {  # Inicializa o dicionário de métricas agregadas com listas vazias para cada indicador.
+    metricas: dict[str, list[float]] = {  # Inicializa o dicionário de métricas agregadas com listas vazias para cada indicador.
         "recall": [],  # Lista para armazenar as pontuações de recall de cada pergunta.
         "mrr": [],  # Lista para armazenar os valores de MRR de cada pergunta.
         "hit_rate": [],  # Lista para armazenar as pontuações de hit rate (1.0 ou 0.0) de cada pergunta.
@@ -115,7 +128,7 @@ def avaliar_rag(dataset_path: Path, k: int = 5) -> dict:  # Define a função pr
     return resumo  # Retorna o dicionário resumo com as médias globais calculadas.
 
 
-def _registrar_avaliacao(resumo: dict, total_perguntas: int) -> None:  # Define a função auxiliar privada para registrar métricas no banco de dados.
+def _registrar_avaliacao(resumo: dict[str, Any], total_perguntas: int) -> None:  # Define a função auxiliar privada para registrar métricas no banco de dados.
     """Registra execução em ingestion_batch."""  # Docstring descrevendo a responsabilidade da função _registrar_avaliacao.
     engine = get_engine()  # Instancia/obtém o objeto engine do banco de dados chamando get_engine().
     with engine.begin() as conn:  # Abre uma transação no banco de dados que faz commit automático ao finalizar sem erros.

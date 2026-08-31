@@ -3,15 +3,13 @@
 # ==============================================================================
 """Configuração inicial do Great Expectations."""
 
-try:
-    from great_expectations.data_context import AbstractDataContext as BaseDataContext
-except ImportError:
-    from great_expectations.data_context import BaseDataContext  # type: ignore[attr-defined]
+import contextlib
+from typing import Any
 
 from cinelake.config import settings
 
 
-def configurar_ge(contexto: BaseDataContext) -> None:
+def configurar_ge(contexto: Any) -> None:
     """
     Adiciona o datasource PostgreSQL ao contexto do Great Expectations
     e gera programaticamente a suíte ratings_suite a partir do contrato de dados.
@@ -35,10 +33,8 @@ def configurar_ge(contexto: BaseDataContext) -> None:
         },
     }
     if hasattr(contexto, "sources") and hasattr(contexto.sources, "add_postgres"):
-        try:
+        with contextlib.suppress(Exception):
             contexto.sources.add_postgres(name="postgres_ratings", connection_string=settings.database_url)
-        except Exception:
-            pass
     elif hasattr(contexto, "add_or_update_datasource"):
         contexto.add_or_update_datasource(**datasource_config)
     else:

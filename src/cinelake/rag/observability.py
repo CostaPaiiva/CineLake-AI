@@ -1,12 +1,19 @@
 """Funções para registrar e consultar métricas de uso do RAG."""
 
 import logging  # Importa o módulo nativo de logging para emissão de mensagens de auditoria e depuração.
-from datetime import datetime, timezone  # Importa utilitários para obtenção de datas e horários em UTC.
+from datetime import (  # Importa utilitários para obtenção de datas e horários em UTC.
+    datetime,
+    timezone,
+)
 from typing import Any  # Importa Any para anotações de tipos genéricos e flexíveis.
 
-from sqlalchemy import text  # Importa a função text do SQLAlchemy para construção de queries SQL parametrizadas.
+from sqlalchemy import (
+    text,  # Importa a função text do SQLAlchemy para construção de queries SQL parametrizadas.
+)
 
-from cinelake.db import get_engine  # Importa a função que fornece o engine de conexão com o banco de dados.
+from cinelake.db import (
+    get_engine,  # Importa a função que fornece o engine de conexão com o banco de dados.
+)
 
 logger = logging.getLogger(__name__)  # Instancia o logger para este módulo específico.
 
@@ -55,16 +62,17 @@ def obter_metricas_rag() -> dict[str, Any]:  # Define a função que extrai agre
         erros = conn.execute(  # Executa query para contar quantas consultas resultaram em erro ou status >= 400.
             text("SELECT COUNT(*) FROM rag_query_log WHERE status_code >= 400 OR erro IS NOT NULL")  # Query SQL para contagem de falhas.
         ).scalar()  # Extrai a quantidade total de erros.
-        consultas_por_ferramenta = dict(  # Converte as linhas agrupadas de ferramentas MCP em um dicionário Python {ferramenta: total}.
-            conn.execute(  # Executa a query de agrupamento.
-                text("""
-                    SELECT ferramenta_mcp, COUNT(*)
-                    FROM rag_query_log
-                    WHERE ferramenta_mcp IS NOT NULL
-                    GROUP BY ferramenta_mcp
-                """)  # Agrupa e contabiliza o uso de cada ferramenta MCP.
-            ).fetchall()  # Retorna todas as tuplas resultantes.
-        )  # Fecha a conversão em dicionário.
+        rows_ferramenta = conn.execute(
+            text("""
+                SELECT ferramenta_mcp, COUNT(*)
+                FROM rag_query_log
+                WHERE ferramenta_mcp IS NOT NULL
+                GROUP BY ferramenta_mcp
+            """)
+        ).fetchall()
+        consultas_por_ferramenta: dict[str, int] = {
+            str(row[0]): int(row[1]) for row in rows_ferramenta
+        }
         ultimas_consultas = [  # Constrói uma lista contendo as 10 consultas mais recentes para auditoria rápida.
             dict(row)  # Converte cada linha retornada em um dicionário chave-valor.
             for row in conn.execute(  # Executa a query de busca ordenada por tempo.
