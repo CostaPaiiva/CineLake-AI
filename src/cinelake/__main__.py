@@ -1,12 +1,12 @@
 """Ponto de entrada da Interface de Linha de Comando (CLI) do CineLake AI."""
 
-import argparse
-import logging
-from pathlib import Path
+import argparse  # Importa o módulo nativo para análise de argumentos de linha de comando.
+import logging  # Importa o módulo nativo para registro e formatação de logs.
+from pathlib import Path  # Importa a classe Path para manipulação orientada a objetos de caminhos no sistema de arquivos.
 
-from cinelake.config import settings
-from cinelake.db import check_database_connection
-from cinelake.logging_config import setup_logging
+from cinelake.config import settings  # Importa as configurações globais da aplicação.
+from cinelake.db import check_database_connection  # Importa a função de verificação de integridade da conexão com o banco.
+from cinelake.logging_config import setup_logging  # Importa a função de inicialização e configuração centralizada de logs.
 
 
 def main() -> None:
@@ -126,6 +126,22 @@ def main() -> None:
     # Vincula o subcomando à função correspondente que executa o servidor
     parser_rag_mcp.set_defaults(func=_cmd_serve_rag_mcp)
 
+    # 10. Subcomando: evaluate-rag (Avalia o sistema RAG usando dataset de teste)
+    parser_eval = subparsers.add_parser("evaluate-rag", help="Avalia o sistema RAG")
+    # Argumento do caminho para o dataset JSON de avaliação
+    parser_eval.add_argument(
+        "--dataset",
+        type=Path,
+        default=Path("data/rag/evaluation/eval_dataset.json"),
+        help="Caminho para o dataset de avaliação",
+    )
+    # Argumento para quantidade de documentos top-k a considerar na avaliação
+    parser_eval.add_argument(
+        "--k", type=int, default=5, help="Número de documentos top-k"
+    )
+    # Vincula o subcomando à função de execução do evaluate-rag
+    parser_eval.set_defaults(func=_cmd_evaluate_rag)
+
     # Processa os argumentos fornecidos pelo usuário no terminal
     args = parser.parse_args()
     # Executa a função vinculada ao subcomando escolhido
@@ -241,6 +257,16 @@ def _cmd_serve_rag_mcp(args: argparse.Namespace) -> None:
     logger.info("Iniciando API RAG+MCP em %s:%s", args.host, args.port)
     # Inicializa o servidor ASGI uvicorn passando a instância da aplicação FastAPI.
     uvicorn.run(app, host=args.host, port=args.port, log_level="info")
+
+
+def _cmd_evaluate_rag(args: argparse.Namespace) -> None:
+    """Executa avaliação RAG."""
+    from cinelake.rag.evaluate import avaliar_rag
+
+    logger = logging.getLogger(__name__)
+    logger.info("Iniciando avaliação RAG...")
+    resultado = avaliar_rag(args.dataset, args.k)
+    logger.info("Resultado: %s", resultado)
 
 
 # Ponto de entrada padrão para execução via módulo (ex: python -m cinelake)
