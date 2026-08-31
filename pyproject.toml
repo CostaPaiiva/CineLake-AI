@@ -70,6 +70,8 @@ module = [
     "great_expectations.*",
     "sentence_transformers.*",
     "cinelake.data_quality.*",
+    "cinelake.mcp_server.*",
+    "cinelake.observability.logging_json",
 ]
 ignore_missing_imports = true
 ignore_errors = true
