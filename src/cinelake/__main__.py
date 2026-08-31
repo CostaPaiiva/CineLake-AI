@@ -2,11 +2,17 @@
 
 import argparse  # Importa o módulo nativo para análise de argumentos de linha de comando.
 import logging  # Importa o módulo nativo para registro e formatação de logs.
-from pathlib import Path  # Importa a classe Path para manipulação orientada a objetos de caminhos no sistema de arquivos.
+from pathlib import (
+    Path,  # Importa a classe Path para manipulação orientada a objetos de caminhos no sistema de arquivos.
+)
 
 from cinelake.config import settings  # Importa as configurações globais da aplicação.
-from cinelake.db import check_database_connection  # Importa a função de verificação de integridade da conexão com o banco.
-from cinelake.logging_config import setup_logging  # Importa a função de inicialização e configuração centralizada de logs.
+from cinelake.db import (
+    check_database_connection,  # Importa a função de verificação de integridade da conexão com o banco.
+)
+from cinelake.logging_config import (
+    setup_logging,  # Importa a função de inicialização e configuração centralizada de logs.
+)
 
 
 def main() -> None:

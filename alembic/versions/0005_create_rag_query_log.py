@@ -6,19 +6,22 @@ Create Date: 2026-08-31
 
 """  # Docstring informando o objetivo da migração e metadados de revisão do Alembic.
 
-from collections.abc import Sequence  # Importa Sequence para tipagem compatível com coleções Python.
-from typing import Union  # Importa Union para declarações de tipos opcionais.
+from collections.abc import (
+    Sequence,  # Importa Sequence para tipagem compatível com coleções Python.
+)
+
+import sqlalchemy as sa  # Importa a biblioteca SQLAlchemy para definição de tipos de colunas e constraints.
+from sqlalchemy.dialects.postgresql import (
+    JSONB,  # Importa o tipo de dados nativo JSONB do dialeto PostgreSQL.
+)
 
 from alembic import op  # Importa o módulo de operações DDL do framework Alembic.
-import sqlalchemy as sa  # Importa a biblioteca SQLAlchemy para definição de tipos de colunas e constraints.
-from sqlalchemy.dialects.postgresql import JSONB  # Importa o tipo de dados nativo JSONB do dialeto PostgreSQL.
-
 
 # revision identifiers, used by Alembic.
 revision: str = "0005"  # Identificador único desta revisão da migração.
-down_revision: Union[str, None] = "0004"  # Identificador da revisão anterior na árvore de versões do Alembic.
-branch_labels: Union[str, Sequence[str], None] = None  # Rótulos de ramificação (branch labels) opcionais.
-depends_on: Union[str, Sequence[str], None] = None  # Dependências adicionais de migração opcionais.
+down_revision: str | None = "0004"  # Identificador da revisão anterior na árvore de versões do Alembic.
+branch_labels: str | Sequence[str] | None = None  # Rótulos de ramificação (branch labels) opcionais.
+depends_on: str | Sequence[str] | None = None  # Dependências adicionais de migração opcionais.
 
 
 def upgrade() -> None:  # Define a função de avanço (upgrade) da migração de schema.
