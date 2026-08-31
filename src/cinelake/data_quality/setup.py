@@ -44,8 +44,17 @@ def configurar_ge(contexto: BaseDataContext) -> None:
     else:
         contexto.add_datasource(**datasource_config)
 
-    # Carrega a suíte de expectativas ou cria uma nova se estiver vazia
-    suite = contexto.get_expectation_suite("ratings_suite")
+    # Carrega a suíte de expectativas ou cria uma nova se não existir
+    try:
+        suite = contexto.get_expectation_suite("ratings_suite")
+    except Exception:
+        if hasattr(contexto, "add_or_update_expectation_suite"):
+            suite = contexto.add_or_update_expectation_suite("ratings_suite")
+        else:
+            from great_expectations.core.expectation_suite import ExpectationSuite
+            suite = ExpectationSuite(expectation_suite_name="ratings_suite")
+            contexto.save_expectation_suite(suite, "ratings_suite")
+
     if not suite.expectations:
         from cinelake.data_quality.data_contracts.ratings_contract import RATINGS_CONTRACT
 
