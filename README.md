@@ -320,4 +320,8 @@ mypy src
 
 ## Licença
 
-Ainda não há uma licença declarada para o projeto. Antes de receber contribuições externas ou distribuir o código, adicione um arquivo `LICENSE` com a licença escolhida.
+Este projeto é distribuído sob a [Apache License 2.0](LICENSE).
+
+Copyright 2026 CineLake AI Contributors.
+
+O código do projeto e os dados/serviços de terceiros utilizados pela plataforma podem estar sujeitos a licenças e termos próprios. Consulte as condições do MovieLens, TMDb, modelos de embeddings e dependências antes de redistribuir esses componentes.
