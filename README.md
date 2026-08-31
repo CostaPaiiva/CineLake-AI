@@ -18,7 +18,7 @@ O **CineLake AI** é um projeto de portfólio que constrói uma plataforma de da
 
 O ambiente-alvo é uma VPS Ubuntu. Os serviços de infraestrutura ficam isolados em Docker e suas portas são vinculadas a `127.0.0.1`; o acesso remoto é feito por túnel SSH.
 
-> Estado atual: fundação de dados implementada — PostgreSQL com pgvector, ingestões MovieLens/TMDb, camada Bronze no MinIO, dbt, Great Expectations, observabilidade, servidor MCP somente leitura e API RAG+MCP.
+> Estado atual: fundação de dados implementada — PostgreSQL com pgvector, ingestões MovieLens/TMDb, camada Bronze no MinIO, dbt, Great Expectations, observabilidade, servidor MCP somente leitura e API RAG+MCP com auditoria e avaliação de recuperação.
 
 ## Arquitetura
 
@@ -40,6 +40,8 @@ flowchart LR
     RAG --> VDB[(PostgreSQL + pgvector)]
     VDB --> RAGAPI[API RAG + MCP]
     MCP --> RAGAPI
+    RAGAPI --> RAGLOG[(Auditoria de consultas RAG)]
+    EVAL[Avaliação Recall · MRR · Hit Rate] --> VDB
     EXP[Exporter Prometheus] --> PROM[Prometheus]
     PROM --> GRAF[Grafana]
 ```
@@ -54,7 +56,7 @@ flowchart LR
 | Qualidade | Contrato de `ratings` e validação com Great Expectations |
 | Observabilidade | API FastAPI, exporter Prometheus, Prometheus e Grafana |
 | IA agêntica | Servidor MCP via `stdio` e API RAG+MCP, com ferramentas de consulta somente leitura |
-| RAG | Coleta, embeddings, busca vetorial e contexto para LLM |
+| RAG | Coleta, embeddings, busca vetorial, avaliação e contexto para LLM |
 
 ## Principais capacidades
 
@@ -69,6 +71,8 @@ flowchart LR
 - Coleta de contexto para RAG a partir de ADRs, runbooks, contratos, modelos dbt e metadados operacionais.
 - Indexação idempotente de documentos RAG no PostgreSQL/pgvector com embeddings de 384 dimensões.
 - Endpoint `POST /ask` que combina busca vetorial e ferramenta MCP adequada ao contexto da pergunta.
+- Auditoria de perguntas RAG, documentos recuperados, ferramentas acionadas, latência, erros e status HTTP.
+- Avaliação da recuperação com Recall@k, MRR e Hit Rate@k, com resultado detalhado em JSON.
 
 ## Stack
 
@@ -164,7 +168,7 @@ python -m cinelake collect-rag-documents
 python -m cinelake index-rag-documents
 ```
 
-Na primeira execução, o modelo `all-MiniLM-L6-v2` será baixado. As migrações aplicadas no passo 3 habilitam a extensão `vector` e criam a tabela `rag_documents`.
+Na primeira execução, o modelo `all-MiniLM-L6-v2` será baixado. As migrações aplicadas no passo 3 habilitam a extensão `vector` e criam as tabelas `rag_documents` e `rag_query_log`.
 
 ## Comandos da CLI
 
@@ -179,6 +183,7 @@ Na primeira execução, o modelo `all-MiniLM-L6-v2` será baixado. As migraçõe
 | `python -m cinelake collect-rag-documents` | Coleta e normaliza documentos de contexto para RAG |
 | `python -m cinelake index-rag-documents` | Gera embeddings e indexa documentos no pgvector |
 | `python -m cinelake serve-rag-mcp` | Inicia a API que combina RAG e MCP na porta 8001 |
+| `python -m cinelake evaluate-rag [--dataset CAMINHO] [--k N]` | Avalia a recuperação semântica do RAG |
 
 ## Operação
 
@@ -266,6 +271,22 @@ curl -X POST http://127.0.0.1:8001/ask \
 
 O endpoint recupera documentos semanticamente similares e seleciona, quando aplicável, uma ferramenta MCP local para obter contexto operacional atual. A resposta devolve o contexto estruturado; a geração final por um LLM ainda não é implementada.
 
+Cada requisição é registrada em `rag_query_log`, incluindo documentos recuperados, ferramenta MCP, latência, status e possível erro. Consulte as métricas agregadas e as dez últimas consultas:
+
+```bash
+curl http://127.0.0.1:8001/rag/metrics
+```
+
+### Avaliação do RAG
+
+O comando de avaliação recebe um dataset JSON com a chave `perguntas`; cada item deve conter `id`, `texto` e `documentos_relevantes` (títulos esperados). Ele calcula Recall@k, MRR e Hit Rate@k, registra a execução em `ingestion_batch` e salva o detalhamento em `data/rag/evaluation/results.json`.
+
+```bash
+python -m cinelake evaluate-rag \
+  --dataset data/rag/evaluation/eval_dataset.json \
+  --k 5
+```
+
 ## Testes e qualidade de código
 
 ```bash
@@ -295,7 +316,7 @@ mypy src
 │   ├── data_quality/        # Contratos e Great Expectations
 │   ├── observability/       # API, health e métricas
 │   ├── mcp_server/          # Servidor e ferramentas MCP
-│   ├── rag/                 # Coleta, embeddings, busca vetorial e integração MCP
+│   ├── rag/                 # Coleta, recuperação, avaliação e observabilidade RAG
 │   └── api/                 # API RAG + MCP
 └── tests/                   # Testes unitários e de integração
 ```
@@ -315,7 +336,7 @@ mypy src
 - Adicionar CI, cobertura de testes e publicação de imagens.
 - Implementar as camadas Silver/Gold e um fluxo de recomendação/MLOps.
 - Integrar um provedor LLM para transformar o contexto RAG+MCP em respostas finais.
-- Criar avaliações de recuperação, relevância e segurança para o fluxo RAG.
+- Ampliar o dataset de avaliação e adicionar métricas de relevância e segurança ao fluxo RAG.
 - Gerar linhagem automaticamente a partir dos artefatos do dbt.
 
 ## Licença
