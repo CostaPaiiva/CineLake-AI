@@ -18,7 +18,7 @@ O **CineLake AI** é um projeto de portfólio que constrói uma plataforma de da
 
 O ambiente-alvo é uma VPS Ubuntu. Os serviços de infraestrutura ficam isolados em Docker e suas portas são vinculadas a `127.0.0.1`; o acesso remoto é feito por túnel SSH.
 
-> Estado atual: fundação de dados implementada — PostgreSQL com pgvector, ingestões MovieLens/TMDb, camada Bronze no MinIO, dbt, Great Expectations, observabilidade, servidor MCP somente leitura e API RAG+MCP com auditoria e avaliação de recuperação.
+> Estado atual: fundação de dados implementada — PostgreSQL com pgvector, ingestões MovieLens/TMDb, camada Bronze no MinIO, dbt, Great Expectations, observabilidade, servidor MCP, RAG auditável e um baseline de recomendação por popularidade.
 
 ## Arquitetura
 
@@ -34,6 +34,9 @@ flowchart LR
     PG --> DBT[dbt]
     DBT --> MARTS[Staging e Marts]
     PG --> GE[Great Expectations]
+    PG --> REC[Baseline de popularidade]
+    REC --> RECS[(Recomendações)]
+    RECS --> RAGAPI
     PG --> OBS[API de observabilidade]
     OBS --> MCP[MCP Server]
     DOCS[ADRs · dbt · contratos · banco] --> RAG[Coleta e indexação RAG]
@@ -54,6 +57,7 @@ flowchart LR
 | Data Lake | MinIO compatível com S3, dados Bronze em Parquet |
 | Transformação | dbt: staging e marts com esquema dimensional |
 | Qualidade | Contrato de `ratings` e validação com Great Expectations |
+| Recomendação | Baseline de popularidade, persistência e avaliação offline |
 | Observabilidade | API FastAPI, exporter Prometheus, Prometheus e Grafana |
 | IA agêntica | Servidor MCP via `stdio` e API RAG+MCP, com ferramentas de consulta somente leitura |
 | RAG | Coleta, embeddings, busca vetorial, avaliação e contexto para LLM |
@@ -73,6 +77,8 @@ flowchart LR
 - Endpoint `POST /ask` que combina busca vetorial e ferramenta MCP adequada ao contexto da pergunta.
 - Auditoria de perguntas RAG, documentos recuperados, ferramentas acionadas, latência, erros e status HTTP.
 - Avaliação da recuperação com Recall@k, MRR e Hit Rate@k, com resultado detalhado em JSON.
+- Baseline de recomendação por popularidade com score ponderado, persistência por usuário e API de consulta.
+- Avaliação offline temporal do baseline com Precision@k, Recall@k e Hit Rate.
 
 ## Stack
 
@@ -170,6 +176,18 @@ python -m cinelake index-rag-documents
 
 Na primeira execução, o modelo `all-MiniLM-L6-v2` será baixado. As migrações aplicadas no passo 3 habilitam a extensão `vector` e criam as tabelas `rag_documents` e `rag_query_log`.
 
+### 8. Gerar recomendações de popularidade
+
+```bash
+# Exibe os filmes com maior score de popularidade ponderada
+python -m cinelake train-popularity-model
+
+# Persiste recomendações globais para os usuários existentes
+python -m cinelake generate-popular-recommendations --top-n 100
+```
+
+O modelo atual é um baseline não personalizado: a mesma lista de filmes populares é gerada para todos os usuários. A tabela `recommendations` é criada pelas migrações do passo 3.
+
 ## Comandos da CLI
 
 | Comando | Finalidade |
@@ -184,6 +202,8 @@ Na primeira execução, o modelo `all-MiniLM-L6-v2` será baixado. As migraçõe
 | `python -m cinelake index-rag-documents` | Gera embeddings e indexa documentos no pgvector |
 | `python -m cinelake serve-rag-mcp` | Inicia a API que combina RAG e MCP na porta 8001 |
 | `python -m cinelake evaluate-rag [--dataset CAMINHO] [--k N]` | Avalia a recuperação semântica do RAG |
+| `python -m cinelake train-popularity-model` | Calcula e mostra o ranking de popularidade ponderada |
+| `python -m cinelake generate-popular-recommendations [--top-n N]` | Gera e persiste recomendações populares |
 
 ## Operação
 
@@ -277,6 +297,12 @@ Cada requisição é registrada em `rag_query_log`, incluindo documentos recuper
 curl http://127.0.0.1:8001/rag/metrics
 ```
 
+O mesmo serviço também expõe o baseline de recomendações:
+
+```bash
+curl "http://127.0.0.1:8001/recommendations/popular?top_n=10"
+```
+
 ### Avaliação do RAG
 
 O comando de avaliação recebe um dataset JSON com a chave `perguntas`; cada item deve conter `id`, `texto` e `documentos_relevantes` (títulos esperados). Ele calcula Recall@k, MRR e Hit Rate@k, registra a execução em `ingestion_batch` e salva o detalhamento em `data/rag/evaluation/results.json`.
@@ -286,6 +312,16 @@ python -m cinelake evaluate-rag \
   --dataset data/rag/evaluation/eval_dataset.json \
   --k 5
 ```
+
+### Recomendação por popularidade
+
+O baseline usa a fórmula de popularidade ponderada do IMDb:
+
+```text
+(v / (v + m)) × R + (m / (v + m)) × C
+```
+
+Onde `v` é o número de avaliações do filme, `R` é sua nota média, `m` é o mínimo de votos configurado e `C` é a média global. A avaliação usa divisão temporal dos ratings, considera relevante uma nota maior ou igual a `3.5` e retorna Precision@k, Recall@k e Hit Rate.
 
 ## Testes e qualidade de código
 
@@ -317,6 +353,7 @@ mypy src
 │   ├── observability/       # API, health e métricas
 │   ├── mcp_server/          # Servidor e ferramentas MCP
 │   ├── rag/                 # Coleta, recuperação, avaliação e observabilidade RAG
+│   ├── recommender/          # Baseline de popularidade e avaliação offline
 │   └── api/                 # API RAG + MCP
 └── tests/                   # Testes unitários e de integração
 ```
@@ -334,7 +371,7 @@ mypy src
 - Containerizar e supervisionar os processos da aplicação, incluindo o exporter Prometheus.
 - Evoluir a orquestração do Airflow para os pipelines de ingestão e transformação.
 - Adicionar CI, cobertura de testes e publicação de imagens.
-- Implementar as camadas Silver/Gold e um fluxo de recomendação/MLOps.
+- Implementar recomendação personalizada, experimentos de modelos e MLOps.
 - Integrar um provedor LLM para transformar o contexto RAG+MCP em respostas finais.
 - Ampliar o dataset de avaliação e adicionar métricas de relevância e segurança ao fluxo RAG.
 - Gerar linhagem automaticamente a partir dos artefatos do dbt.
