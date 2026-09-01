@@ -170,6 +170,8 @@ def gerar_recomendacoes_populares(top_n: int = 100, modelo: str = "popularity_ba
             index=False,
             # Utiliza inserções em múltiplos valores por instrução SQL para maior performance
             method="multi",
+            # Divide a inserção em lotes de 1000 linhas para não exceder o limite de 65535 parâmetros do PostgreSQL
+            chunksize=1000,
         )
 
     # Registra no log a conclusão bem sucedida do processo informando a quantidade de usuários
