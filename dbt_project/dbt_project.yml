@@ -1,8 +1,13 @@
-﻿# ==============================================================================
+# ==============================================================================
 # dbt_project.yml - Configurações Principais do Projeto dbt CineLake
 # ==============================================================================
+# Nome único do projeto dbt
 name: 'cinelake'
+# Especifica o nome do perfil em profiles.yml utilizado por este projeto
+profile: 'cinelake'
+# Versão do projeto dbt
 version: '1.0.0'
+# Versão do formato do arquivo de configuração
 config-version: 2
 
 # Diretórios onde o dbt busca os diferentes componentes do projeto
