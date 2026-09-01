@@ -148,6 +148,18 @@ def main() -> None:
     # Vincula o subcomando à função de execução do evaluate-rag
     parser_eval.set_defaults(func=_cmd_evaluate_rag)
 
+    # 11. Subcomando: train-popularity-model (Treina/calcula modelo de popularidade)
+    parser_pop = subparsers.add_parser("train-popularity-model", help="Treina/calcula modelo de popularidade")
+    # Vincula o subcomando à função de execução do treino de popularidade
+    parser_pop.set_defaults(func=_cmd_train_popularity)
+
+    # 12. Subcomando: generate-popular-recommendations (Gera recomendações populares)
+    parser_rec = subparsers.add_parser("generate-popular-recommendations", help="Gera recomendações populares")
+    # Adiciona argumento --top-n para definir o número de recomendações por usuário
+    parser_rec.add_argument("--top-n", type=int, default=100, help="Número de recomendações por usuário")
+    # Vincula o subcomando à função de geração de recomendações
+    parser_rec.set_defaults(func=_cmd_generate_popular)
+
     # Processa os argumentos fornecidos pelo usuário no terminal
     args = parser.parse_args()
     # Executa a função vinculada ao subcomando escolhido
@@ -273,6 +285,34 @@ def _cmd_evaluate_rag(args: argparse.Namespace) -> None:
     logger.info("Iniciando avaliação RAG...")
     resultado = avaliar_rag(args.dataset, args.k)
     logger.info("Resultado: %s", resultado)
+
+
+# Define o comando CLI para treinar/calcular o modelo de popularidade
+def _cmd_train_popularity(args: argparse.Namespace) -> None:
+    # Docstring descrevendo o comando de treino do modelo
+    """Treina modelo de popularidade."""
+    # Importação tardia da função calcular_popularidade para otimizar o tempo de inicialização da CLI
+    from cinelake.recommender.popularity import calcular_popularidade
+    # Obtém o logger configurado para este módulo
+    logger = logging.getLogger(__name__)
+    # Executa a função que calcula a popularidade dos filmes
+    df = calcular_popularidade()
+    # Exibe no log os 10 primeiros filmes com maior score de popularidade
+    logger.info("Top 10 filmes populares:\n%s", df.head(10))
+
+
+# Define o comando CLI para gerar recomendações populares e persistir no banco de dados
+def _cmd_generate_popular(args: argparse.Namespace) -> None:
+    # Docstring descrevendo o comando de geração e gravação das recomendações
+    """Gera recomendações populares e grava na tabela."""
+    # Importação tardia da função gerar_recomendacoes_populares
+    from cinelake.recommender.popularity import gerar_recomendacoes_populares
+    # Obtém o logger configurado para este módulo
+    logger = logging.getLogger(__name__)
+    # Invoca a função que gera e grava as recomendações no banco de dados passando a quantidade top_n
+    gerar_recomendacoes_populares(top_n=args.top_n)
+    # Registra no log a confirmação da geração das recomendações
+    logger.info("Recomendações geradas")
 
 
 # Ponto de entrada padrão para execução via módulo (ex: python -m cinelake)
