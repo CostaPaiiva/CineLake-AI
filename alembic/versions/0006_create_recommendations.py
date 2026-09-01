@@ -6,22 +6,23 @@ Revises: 0005
 Create Date: 2026-09-01
 
 """
-# Importa tipos Sequence e Union do módulo typing para anotações de tipo
-from typing import Sequence, Union
+# Importa tipo Sequence do módulo collections.abc para compatibilidade com versões recentes do Python
+from collections.abc import Sequence
+
+# Importa a biblioteca sqlalchemy como sa para definição de tabelas e colunas
+import sqlalchemy as sa
 
 # Importa a biblioteca op do Alembic para execução de operações no banco de dados
 from alembic import op
-# Importa a biblioteca sqlalchemy como sa para definição de tabelas e colunas
-import sqlalchemy as sa
 
 # Define o identificador único desta revisão de migração
 revision: str = "0006"
 # Define o identificador da migração anterior sobre a qual esta depende
-down_revision: Union[str, None] = "0005"
+down_revision: str | None = "0005"
 # Define os rótulos de ramificação (branch labels), caso existam
-branch_labels: Union[str, Sequence[str], None] = None
+branch_labels: Sequence[str] | str | None = None
 # Define outras migrações de dependência, caso existam
-depends_on: Union[str, Sequence[str], None] = None
+depends_on: Sequence[str] | str | None = None
 
 
 # Define a função de atualização da migração (aplicar mudanças no banco)

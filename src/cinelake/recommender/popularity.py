@@ -1,13 +1,14 @@
 # Docstring do módulo indicando que este arquivo trata do modelo baseline por popularidade
 """Modelo de recomendação baseline por popularidade."""
 
+# Importa datetime e timezone do módulo datetime para manipulação de datas com fuso horário
 # Importa o módulo nativo de logging do Python
 import logging
-# Importa datetime e timezone do módulo datetime para manipulação de datas com fuso horário
 from datetime import datetime, timezone
 
 # Importa a biblioteca pandas para manipulação e análise de dados em DataFrames
 import pandas as pd
+
 # Importa o construtor text do SQLAlchemy para execução de SQL nativo com segurança
 from sqlalchemy import text
 
@@ -63,12 +64,12 @@ def calcular_popularidade(min_votos: int = 50) -> pd.DataFrame:
 
     # Converte a coluna total_votos para o tipo float (v)
     v = df["total_votos"].astype(float)
-    # Converte a coluna media_nota para o tipo float (R)
-    R = df["media_nota"].astype(float)
-    # Converte o parâmetro min_votos para float (m)
+    # Converte a coluna media_nota para o tipo float (R da fórmula do IMDB)
+    R = df["media_nota"].astype(float)  # noqa: N806
+    # Converte o parâmetro min_votos para float (m da fórmula do IMDB)
     m = float(min_votos)
-    # Atribui a média global a uma variável local (C)
-    C = media_global
+    # Atribui a média global a uma variável local (C da fórmula do IMDB)
+    C = media_global  # noqa: N806
 
     # Aplica a fórmula de pontuação ponderada do IMDB em cada linha
     df["score_popularidade"] = (v / (v + m)) * R + (m / (v + m)) * C

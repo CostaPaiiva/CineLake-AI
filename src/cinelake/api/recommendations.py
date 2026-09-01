@@ -1,8 +1,12 @@
 # Docstring do módulo descrevendo que este arquivo contém os endpoints da API de recomendações
 """Endpoints de recomendações."""
 
+# Importa o tipo Any para anotação do tipo de retorno do endpoint
+from typing import Any
+
 # Importa as classes APIRouter e Query da biblioteca FastAPI para definição de rotas e validações de parâmetros
 from fastapi import APIRouter, Query
+
 # Importa a função text do SQLAlchemy para construção de queries SQL parametrizadas
 from sqlalchemy import text
 
@@ -15,10 +19,10 @@ router = APIRouter(prefix="/recommendations", tags=["recommendations"])
 
 # Define o endpoint HTTP GET na rota '/popular' com resumo explicativo para a documentação
 @router.get("/popular", summary="Retorna recomendações populares")
-# Define a função de controle para o endpoint aceitando o parâmetro top_n com validação (entre 1 e 100, valor padrão 10)
+# Define a função de controle para o endpoint aceitando o parâmetro top_n com validação e com tipo de retorno dict
 def recomendacoes_populares(
     top_n: int = Query(10, ge=1, le=100),
-):
+) -> dict[str, Any]:
     # Docstring da função descrevendo a finalidade da rota
     """Retorna os filmes mais populares (baseline)."""
     # Obtém o objeto Engine do banco de dados do SQLAlchemy

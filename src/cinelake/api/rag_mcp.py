@@ -12,6 +12,8 @@ from pydantic import (
     BaseModel,  # Importa BaseModel do Pydantic para validação e serialização dos dados de entrada.
 )
 
+# Importa o roteador de rotas de recomendações da API
+from cinelake.api.recommendations import router as rec_router
 from cinelake.rag.mcp_client import (
     invocar_ferramenta_mcp,  # Importa a função que despacha chamadas para o servidor MCP local.
 )
@@ -22,8 +24,6 @@ from cinelake.rag.observability import (  # Importa funções de observabilidade
 from cinelake.rag.retriever import (
     buscar_documentos_similares,  # Importa a função que realiza a busca semântica por similaridade de embeddings.
 )
-# Importa o roteador de rotas de recomendações da API
-from cinelake.api.recommendations import router as rec_router
 
 logger = logging.getLogger(__name__)  # Instancia o logger específico deste módulo.
 

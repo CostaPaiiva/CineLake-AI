@@ -3,10 +3,12 @@
 
 # Importa o módulo nativo de logging para registro de mensagens no console/arquivo
 import logging
+
+# Importa o tipo Any para anotações de tipagem genérica
+from typing import Any
+
 # Importa a biblioteca pandas para manipulação e análise de DataFrames
 import pandas as pd
-# Importa o construtor text do SQLAlchemy para criação de consultas SQL seguras
-from sqlalchemy import text
 
 # Importa a função get_engine do banco de dados do projeto CineLake
 from cinelake.db import get_engine
@@ -43,7 +45,7 @@ def _dividir_treino_teste(porcentagem_teste: float = 0.2) -> tuple[pd.DataFrame,
 
 
 # Função pública para realizar a avaliação offline das recomendações por popularidade
-def avaliar_modelo_popularidade(top_k: int = 10) -> dict:
+def avaliar_modelo_popularidade(top_k: int = 10) -> dict[str, Any]:
     # Docstring da função indicando o cálculo de métricas offline
     """
     Avalia o modelo de popularidade usando métricas offline.
@@ -54,8 +56,6 @@ def avaliar_modelo_popularidade(top_k: int = 10) -> dict:
     Returns:
         Dicionário com métricas.
     """
-    # Obtém o objeto Engine para interação com a base de dados
-    engine = get_engine()
     # Executa a partição dos dados obtendo os DataFrames de treino e teste
     treino, teste = _dividir_treino_teste()
 
@@ -81,12 +81,12 @@ def avaliar_modelo_popularidade(top_k: int = 10) -> dict:
 
     # Converte o total de votos para tipo float (v)
     v = contagem["total_votos"].astype(float)
-    # Converte a média de notas para tipo float (R)
-    R = contagem["media_nota"].astype(float)
-    # Converte o mínimo de votos para tipo float (m)
+    # Converte a média de notas para tipo float (R da fórmula IMDB)
+    R = contagem["media_nota"].astype(float)  # noqa: N806
+    # Converte o mínimo de votos para tipo float (m da fórmula IMDB)
     m = float(min_votos)
-    # Atribui a média global calculada a variável C
-    C = media_global
+    # Atribui a média global calculada à variável C (constante IMDB)
+    C = media_global  # noqa: N806
 
     # Calcula o score de popularidade ponderada usando os dados do treino
     contagem["score"] = (v / (v + m)) * R + (m / (v + m)) * C
@@ -107,8 +107,8 @@ def avaliar_modelo_popularidade(top_k: int = 10) -> dict:
     # Inicializa contador de total de usuários avaliados
     total_usuarios = 0
 
-    # Itera sobre cada usuário e sua respectiva lista de filmes relevantes do teste
-    for user, filmes_relevantes in relevantes_por_user.items():
+    # Itera sobre cada usuário (ignorando o id com _user) e sua respectiva lista de filmes relevantes do teste
+    for _user, filmes_relevantes in relevantes_por_user.items():
         # Incrementa o número total de usuários avaliados
         total_usuarios += 1
         # Atribui a lista top_filmes calculada às recomendações do usuário
