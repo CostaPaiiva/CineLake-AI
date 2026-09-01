@@ -33,8 +33,8 @@ class Settings:
     @classmethod
     def from_env(cls) -> "Settings":
         """Carrega as configurações a partir do arquivo .env e variáveis de ambiente."""
-        # Carrega as variáveis do arquivo .env localizado na raiz do projeto
-        load_dotenv(PROJECT_ROOT / ".env")
+        # Carrega as variáveis do arquivo .env localizado na raiz do projeto garantindo a substituição de variáveis antigas no ambiente com override=True
+        load_dotenv(PROJECT_ROOT / ".env", override=True)
 
         # Configurações do PostgreSQL com valores padrão (fallback) caso não estejam no ambiente
         user = os.getenv("POSTGRES_USER", "cinelake")
