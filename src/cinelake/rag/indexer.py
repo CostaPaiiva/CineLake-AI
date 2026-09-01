@@ -127,12 +127,19 @@ def indexar_documentos(diretorio_documentos: Path) -> dict[str, Any]:
                             metadados = EXCLUDED.metadados,
                             embedding = EXCLUDED.embedding
                     """),
+                    # Passa os parâmetros da instrução SQL convertendo o embedding para string do tipo vetor
                     {
+                        # Atribui o título do documento
                         "titulo": titulo,
+                        # Atribui o conteúdo textual do documento
                         "conteudo": conteudo,
+                        # Atribui a fonte de origem do documento
                         "fonte": fonte,
+                        # Serializa os metadados do documento em formato JSON string
                         "metadados": json.dumps(metadados, ensure_ascii=False),
-                        "embedding": embedding,
+                        # Converte a lista de números do embedding para string no formato de vetor reconhecido pelo pgvector
+                        "embedding": str(embedding),
+                        # Atribui o identificador único do lote do documento
                         "source_id": source_id,
                     },
                 )

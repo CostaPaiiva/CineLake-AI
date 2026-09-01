@@ -48,12 +48,10 @@ def buscar_documentos_similares(pergunta: str, top_k: int = 5) -> list[dict[str,
     engine = get_engine()
 
     # Comentário explicativo sobre o cálculo de similaridade de cosseno com o operador do pgvector.
-    # Consulta por similaridade de cosseno (1 - <=>)
-    # Define a query SQL para selecionar dados da tabela rag_documents e calcular
-    # a similaridade de cosseno.
+    # Consulta por similaridade de cosseno (1 - <=>) com casting explicativo ::vector
     query = text("""
         SELECT titulo, conteudo, fonte, metadados,
-               1 - (embedding <=> :embedding) AS similaridade
+               1 - (embedding <=> :embedding::vector) AS similaridade
         FROM rag_documents
         ORDER BY similaridade DESC
         LIMIT :top_k
@@ -61,11 +59,10 @@ def buscar_documentos_similares(pergunta: str, top_k: int = 5) -> list[dict[str,
 
     # Abre um bloco de conexão com o banco de dados usando gerenciador de contexto (with).
     with engine.connect() as conn:
-        # Executa a instrução SQL passando os parâmetros do embedding e limite (top_k),
-        # trazendo todos os resultados.
+        # Executa a instrução SQL convertendo a lista do embedding para string no formato de vetor aceito pelo pgvector
         resultado = conn.execute(
             query,
-            {"embedding": embedding, "top_k": top_k},
+            {"embedding": str(embedding), "top_k": top_k},
         ).fetchall()
 
     # Inicializa a lista vazia para armazenar os documentos formatados como dicionários.
