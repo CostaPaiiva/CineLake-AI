@@ -47,11 +47,10 @@ def buscar_documentos_similares(pergunta: str, top_k: int = 5) -> list[dict[str,
     # Obtém a instância da engine de conexão do banco de dados PostgreSQL/pgvector.
     engine = get_engine()
 
-    # Comentário explicativo sobre o cálculo de similaridade de cosseno com o operador do pgvector.
-    # Consulta por similaridade de cosseno (1 - <=>) com casting explicativo ::vector
+    # Consulta por similaridade de cosseno (1 - <=>) utilizando a sintaxe CAST(:embedding AS vector) para evitar ambiguidade dos dois pontos (::) no SQLAlchemy
     query = text("""
         SELECT titulo, conteudo, fonte, metadados,
-               1 - (embedding <=> :embedding::vector) AS similaridade
+               1 - (embedding <=> CAST(:embedding AS vector)) AS similaridade
         FROM rag_documents
         ORDER BY similaridade DESC
         LIMIT :top_k
