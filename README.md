@@ -18,7 +18,7 @@ O **CineLake AI** é um projeto de portfólio que constrói uma plataforma de da
 
 O ambiente-alvo é uma VPS Ubuntu. Os serviços de infraestrutura ficam isolados em Docker e suas portas são vinculadas a `127.0.0.1`; o acesso remoto é feito por túnel SSH.
 
-> Estado atual: fundação de dados implementada — PostgreSQL com pgvector, ingestões MovieLens/TMDb, camada Bronze no MinIO, dbt, Great Expectations, observabilidade, servidor MCP, RAG auditável e um baseline de recomendação por popularidade.
+> Estado atual: fundação de dados implementada — PostgreSQL com pgvector, ingestões MovieLens/TMDb, camada Bronze no MinIO, dbt, Great Expectations, observabilidade, servidor MCP, RAG auditável e recomendação por popularidade, conteúdo, filtragem colaborativa e modelo híbrido.
 
 ## Arquitetura
 
@@ -34,8 +34,15 @@ flowchart LR
     PG --> DBT[dbt]
     DBT --> MARTS[Staging e Marts]
     PG --> GE[Great Expectations]
+    MOVIES[Filmes + gêneros] --> CB[Content-based]
+    PG --> CF[Filtragem colaborativa]
     PG --> REC[Baseline de popularidade]
+    CB --> HY[Modelo híbrido]
+    CF --> HY
     REC --> RECS[(Recomendações)]
+    CB --> RECS
+    CF --> RECS
+    HY --> RECS
     RECS --> RAGAPI
     PG --> OBS[API de observabilidade]
     OBS --> MCP[MCP Server]
@@ -57,7 +64,7 @@ flowchart LR
 | Data Lake | MinIO compatível com S3, dados Bronze em Parquet |
 | Transformação | dbt: staging e marts com esquema dimensional |
 | Qualidade | Contrato de `ratings` e validação com Great Expectations |
-| Recomendação | Baseline de popularidade, persistência e avaliação offline |
+| Recomendação | Popularidade, conteúdo, colaborativa e híbrida; persistência, API e avaliação offline |
 | Observabilidade | API FastAPI, exporter Prometheus, Prometheus e Grafana |
 | IA agêntica | Servidor MCP via `stdio` e API RAG+MCP, com ferramentas de consulta somente leitura |
 | RAG | Coleta, embeddings, busca vetorial, avaliação e contexto para LLM |
@@ -77,12 +84,12 @@ flowchart LR
 - Endpoint `POST /ask` que combina busca vetorial e ferramenta MCP adequada ao contexto da pergunta.
 - Auditoria de perguntas RAG, documentos recuperados, ferramentas acionadas, latência, erros e status HTTP.
 - Avaliação da recuperação com Recall@k, MRR e Hit Rate@k, com resultado detalhado em JSON.
-- Baseline de recomendação por popularidade com score ponderado, persistência por usuário e API de consulta.
-- Avaliação offline temporal do baseline com Precision@k, Recall@k e Hit Rate.
+- Quatro estratégias de recomendação: popularidade, conteúdo por gêneros, colaborativa e híbrida.
+- Persistência dos rankings por usuário, endpoints de consulta e avaliação offline comparativa.
 
 ## Stack
 
-`Python` · `PostgreSQL + pgvector` · `Docker Compose` · `MinIO` · `Apache Parquet` · `SQLAlchemy` · `Alembic` · `dbt` · `Great Expectations` · `FastAPI` · `Prometheus` · `Grafana` · `Sentence Transformers` · `Model Context Protocol`
+`Python` · `PostgreSQL + pgvector` · `Docker Compose` · `MinIO` · `Apache Parquet` · `SQLAlchemy` · `Alembic` · `dbt` · `Great Expectations` · `scikit-learn` · `scikit-surprise` · `FastAPI` · `Prometheus` · `Grafana` · `Sentence Transformers` · `Model Context Protocol`
 
 ## Pré-requisitos
 
@@ -176,7 +183,7 @@ python -m cinelake index-rag-documents
 
 Na primeira execução, o modelo `all-MiniLM-L6-v2` será baixado. As migrações aplicadas no passo 3 habilitam a extensão `vector` e criam as tabelas `rag_documents` e `rag_query_log`.
 
-### 8. Gerar recomendações de popularidade
+### 8. Gerar e avaliar recomendações
 
 ```bash
 # Exibe os filmes com maior score de popularidade ponderada
@@ -184,9 +191,24 @@ python -m cinelake train-popularity-model
 
 # Persiste recomendações globais para os usuários existentes
 python -m cinelake generate-popular-recommendations --top-n 100
+
+# Recomendação personalizada por gêneros
+python -m cinelake train-content-based-model
+python -m cinelake generate-content-recommendations --top-n 100
+
+# Filtragem colaborativa item-item baseada nas avaliações
+python -m cinelake train-collaborative-model
+python -m cinelake generate-collaborative-recommendations --top-n 100
+
+# Combina content-based e colaborativa
+python -m cinelake generate-hybrid-recommendations \
+  --top-n 100 --peso-content 0.4 --peso-collab 0.6
+
+# Compara os modelos usando métricas offline
+python -m cinelake evaluate-all-models --top-k 10
 ```
 
-O modelo atual é um baseline não personalizado: a mesma lista de filmes populares é gerada para todos os usuários. A tabela `recommendations` é criada pelas migrações do passo 3.
+A tabela `recommendations` é criada pelas migrações do passo 3. O modelo de popularidade é global; os modelos content-based, colaborativo e híbrido são personalizados por usuário.
 
 ## Comandos da CLI
 
@@ -204,6 +226,12 @@ O modelo atual é um baseline não personalizado: a mesma lista de filmes popula
 | `python -m cinelake evaluate-rag [--dataset CAMINHO] [--k N]` | Avalia a recuperação semântica do RAG |
 | `python -m cinelake train-popularity-model` | Calcula e mostra o ranking de popularidade ponderada |
 | `python -m cinelake generate-popular-recommendations [--top-n N]` | Gera e persiste recomendações populares |
+| `python -m cinelake train-content-based-model` | Calcula similaridade item-item a partir dos gêneros |
+| `python -m cinelake generate-content-recommendations [--top-n N]` | Gera recomendações personalizadas por conteúdo |
+| `python -m cinelake train-collaborative-model` | Calcula similaridade item-item a partir das avaliações |
+| `python -m cinelake generate-collaborative-recommendations [--top-n N]` | Gera recomendações colaborativas personalizadas |
+| `python -m cinelake generate-hybrid-recommendations [--peso-content X] [--peso-collab Y]` | Combina os rankings content-based e colaborativo |
+| `python -m cinelake evaluate-all-models [--top-k N]` | Compara os modelos de recomendação offline |
 
 ## Operação
 
@@ -297,10 +325,12 @@ Cada requisição é registrada em `rag_query_log`, incluindo documentos recuper
 curl http://127.0.0.1:8001/rag/metrics
 ```
 
-O mesmo serviço também expõe o baseline de recomendações:
+O mesmo serviço expõe recomendações globais, personalizadas e rankings persistidos:
 
 ```bash
 curl "http://127.0.0.1:8001/recommendations/popular?top_n=10"
+curl "http://127.0.0.1:8001/recommendations/user/1?modelo=hybrid&top_n=10"
+curl "http://127.0.0.1:8001/recommendations/model/content_based?user_id=1&top_n=10"
 ```
 
 ### Avaliação do RAG
@@ -313,7 +343,18 @@ python -m cinelake evaluate-rag \
   --k 5
 ```
 
-### Recomendação por popularidade
+### Sistema de recomendação
+
+O CineLake AI possui quatro estratégias:
+
+- **Popularidade:** ranking global com média ponderada.
+- **Content-based:** recomenda filmes semelhantes aos que o usuário avaliou positivamente, com base em gêneros.
+- **Colaborativa:** usa padrões de avaliações para recomendar itens similares aos já consumidos pelo usuário.
+- **Híbrida:** normaliza e combina os scores content-based e colaborativo; os pesos padrão são `0.4` e `0.6`, respectivamente.
+
+As recomendações são persistidas por modelo em `recommendations`. A avaliação usa divisão temporal dos ratings e mede Precision@k, Recall@k e Hit Rate. O comando `evaluate-all-models` compara as estratégias disponíveis.
+
+#### Baseline por popularidade
 
 O baseline usa a fórmula de popularidade ponderada do IMDb:
 
@@ -321,7 +362,7 @@ O baseline usa a fórmula de popularidade ponderada do IMDb:
 (v / (v + m)) × R + (m / (v + m)) × C
 ```
 
-Onde `v` é o número de avaliações do filme, `R` é sua nota média, `m` é o mínimo de votos configurado e `C` é a média global. A avaliação usa divisão temporal dos ratings, considera relevante uma nota maior ou igual a `3.5` e retorna Precision@k, Recall@k e Hit Rate.
+Onde `v` é o número de avaliações do filme, `R` é sua nota média, `m` é o mínimo de votos configurado e `C` é a média global.
 
 ## Testes e qualidade de código
 
@@ -353,7 +394,7 @@ mypy src
 │   ├── observability/       # API, health e métricas
 │   ├── mcp_server/          # Servidor e ferramentas MCP
 │   ├── rag/                 # Coleta, recuperação, avaliação e observabilidade RAG
-│   ├── recommender/          # Baseline de popularidade e avaliação offline
+│   ├── recommender/          # Popularidade, conteúdo, colaborativa, híbrida e avaliação
 │   └── api/                 # API RAG + MCP
 └── tests/                   # Testes unitários e de integração
 ```
@@ -371,7 +412,7 @@ mypy src
 - Containerizar e supervisionar os processos da aplicação, incluindo o exporter Prometheus.
 - Evoluir a orquestração do Airflow para os pipelines de ingestão e transformação.
 - Adicionar CI, cobertura de testes e publicação de imagens.
-- Implementar recomendação personalizada, experimentos de modelos e MLOps.
+- Adicionar experiment tracking, versionamento de modelos e retreinamento automatizado.
 - Integrar um provedor LLM para transformar o contexto RAG+MCP em respostas finais.
 - Ampliar o dataset de avaliação e adicionar métricas de relevância e segurança ao fluxo RAG.
 - Gerar linhagem automaticamente a partir dos artefatos do dbt.
