@@ -1,85 +1,88 @@
-[build-system]
-requires = ["setuptools>=68", "wheel"]
-build-backend = "setuptools.build_meta"
+[build-system] # Configuração do sistema de build do projeto Python
+requires = ["setuptools>=68", "wheel"] # Pacotes necessários para a construção/build do pacote (setuptools e wheel)
+build-backend = "setuptools.build_meta" # Backend responsável pelo processo de compilação/empacotamento
 
-[project]
-name = "cinelake-ai"
-version = "0.1.0"
-description = "Production-Grade Data Engineering, Recommendation & Agentic Data Platform"
-readme = "README.md"
-requires-python = ">=3.10"
-authors = [
-    { name = "Seu Nome", email = "seu-email@example.com" }
-]
-dependencies = [
-    "python-dotenv>=1.0.0",  # Gerenciamento de variáveis de ambiente (.env)
-    "sqlalchemy>=2.0",       # ORM e abstração de banco de dados SQL
-    "psycopg[binary]>=3.1",  # Driver PostgreSQL de alta performance (psycopg3)
-    "alembic>=1.13",         # Controle de versões e migrações do schema do banco
-    "boto3>=1.34",           # SDK AWS para interação com S3 / Lakehouse
-    "pyarrow>=15.0",         # Processamento e manipulação de arquivos Parquet em memória
-    "pandas>=2.0",           # Manipulação e análise tabular de dados
-    "dbt-core>=1.8",         # Motor de transformação de dados e modelagem analítica
-    "dbt-postgres>=1.8",     # Adaptador dbt para bancos de dados PostgreSQL
-    "great_expectations>=0.18,<1.0",  # Framework de validação, testes e contratos de qualidade de dados
-    "prometheus_client>=0.18",   # Cliente para exportação e coleta de métricas de observabilidade
-    "python-json-logger>=2.0",   # Formatação de logs da aplicação em estrutura JSON
-    "fastapi>=0.110",            # Framework web assíncrono para construção de APIs REST de alta performance
-    "uvicorn>=0.27",             # Servidor de aplicação ASGI de alta velocidade para Python
-    "mcp>=1.0",                  # SDK do Model Context Protocol para integração com agentes de IA
+[project] # Metadados principais do projeto e suas configurações básicas
+name = "cinelake-ai" # Nome oficial da biblioteca/pacote Python
+version = "0.1.0" # Versão atual do projeto seguindo o versionamento semântico
+description = "Production-Grade Data Engineering, Recommendation & Agentic Data Platform" # Descrição resumida do propósito do projeto
+readme = "README.md" # Caminho para o arquivo com a documentação principal do projeto
+requires-python = ">=3.10" # Versão mínima do interpretador Python exigida
+authors = [ # Lista de autores e mantenedores do projeto
+    { name = "Seu Nome", email = "seu-email@example.com" } # Nome e e-mail de contato do desenvolvedor/autor
+] # Fim da lista de autores
+dependencies = [ # Lista de dependências diretas de produção necessárias para a execução do sistema
+    "python-dotenv>=1.0.0", # Gerenciamento de variáveis de ambiente (.env)
+    "sqlalchemy>=2.0", # ORM e abstração de banco de dados SQL
+    "psycopg[binary]>=3.1", # Driver PostgreSQL de alta performance (psycopg3)
+    "alembic>=1.13", # Controle de versões e migrações do schema do banco
+    "boto3>=1.34", # SDK AWS para interação com S3 / Lakehouse
+    "pyarrow>=15.0", # Processamento e manipulação de arquivos Parquet em memória
+    "pandas>=2.0", # Manipulação e análise tabular de dados
+    "dbt-core>=1.8", # Motor de transformação de dados e modelagem analítica
+    "dbt-postgres>=1.8", # Adaptador dbt para bancos de dados PostgreSQL
+    "great_expectations>=0.18,<1.0", # Framework de validação, testes e contratos de qualidade de dados
+    "prometheus_client>=0.18", # Cliente para exportação e coleta de métricas de observabilidade
+    "python-json-logger>=2.0", # Formatação de logs da aplicação em estrutura JSON
+    "fastapi>=0.110", # Framework web assíncrono para construção de APIs REST de alta performance
+    "uvicorn>=0.27", # Servidor de aplicação ASGI de alta velocidade para Python
+    "mcp>=1.0", # SDK do Model Context Protocol para integração com agentes de IA
     "sentence-transformers>=2.7", # Modelo de aprendizado de máquina para geração de embeddings vetoriais RAG
-]
+    "scikit-learn>=1.4", # Biblioteca para Machine Learning, pré-processamento e algoritmos de filtragem
+    "scikit-surprise>=1.1.3", # Algoritmos e ferramentas focados especificamente em sistemas de recomendação
+    "numpy>=1.26", # Operações matemáticas e computação numérica eficiente com arrays multidimensionais
+    "scipy>=1.12", # Algoritmos científicos, otimização, álgebra linear e computação estatística avançada
+] # Fim da lista de dependências de produção
 
-[project.optional-dependencies]
-dev = [
-    "pytest>=8.0",
-    "pytest-cov>=4.0",
-    "ruff>=0.6",
-    "mypy>=1.10"
-]
+[project.optional-dependencies] # Dependências opcionais separadas por grupos (ex: desenvolvimento, testes)
+dev = [ # Grupo de dependências voltadas para ambiente de desenvolvimento e testes
+    "pytest>=8.0", # Framework de testes automatizados para execução de testes unitários e de integração
+    "pytest-cov>=4.0", # Plugin do pytest para geração de relatórios de cobertura de código (coverage)
+    "ruff>=0.6", # Linter e formatador de código extremamente rápido escrito em Rust
+    "mypy>=1.10" # Checador estático de tipos para garantir type safety no Python
+] # Fim do grupo de dependências de desenvolvimento
 
-[project.scripts]
-cinelake = "cinelake.__main__:main"
+[project.scripts] # Definição de comandos CLI executáveis instalados junto com o pacote
+cinelake = "cinelake.__main__:main" # Mapeia o comando de terminal 'cinelake' para a função main no ponto de entrada
 
-[tool.setuptools.packages.find]
-where = ["src"]
+[tool.setuptools.packages.find] # Configuração de descoberta automática de pacotes do setuptools
+where = ["src"] # Diretório raiz onde os módulos e pacotes do código-fonte estão localizados
 
-[tool.ruff]
-line-length = 100
-target-version = "py310"
-exclude = [".venv", "build", "dist"]
+[tool.ruff] # Configurações globais da ferramenta de linting e formatação Ruff
+line-length = 100 # Comprimento máximo permitido por linha de código (100 caracteres)
+target-version = "py310" # Versão alvo da linguagem Python para compatibilidade na verificação das regras
+exclude = [".venv", "build", "dist"] # Diretórios ignorados pelas checagens do Ruff
 
-[tool.ruff.lint]
-select = ["E", "F", "I", "N", "W", "UP", "B", "SIM"]
-ignore = ["E501"]
+[tool.ruff.lint] # Configuração detalhada do linter Ruff
+select = ["E", "F", "I", "N", "W", "UP", "B", "SIM"] # Regras de lint ativadas (Erro, Flake8, Isort, Naming, Warning, Upgrade, Bugbear, Simplify)
+ignore = ["E501"] # Desativa o aviso de linha muito longa (pois line-length já controla o limite)
 
-[tool.ruff.lint.isort]
-known-first-party = ["cinelake"]
+[tool.ruff.lint.isort] # Configurações da ordenação automática de imports do Ruff (isort)
+known-first-party = ["cinelake"] # Trata o pacote 'cinelake' como código local/first-party para organização correta dos imports
 
-[tool.mypy]
-python_version = "3.10"
-strict = true
-ignore_missing_imports = true
-disallow_untyped_decorators = false
-no_warn_unused_ignores = true
+[tool.mypy] # Configurações globais do checador estático de tipos Mypy
+python_version = "3.10" # Versão do Python utilizada na verificação estática de tipos
+strict = true # Ativa o modo estrito de checagem de tipos (exige anotações em todas as funções)
+ignore_missing_imports = true # Ignora erros de tipagem em bibliotecas terceiras sem suporte a tipos/stubs
+disallow_untyped_decorators = false # Permite o uso de decoradores sem anotação explícita de tipos
+no_warn_unused_ignores = true # Suprime avisos sobre diretivas '# type: ignore' desnecessárias
 
-[[tool.mypy.overrides]]
-module = [
-    "mcp.*",
-    "pythonjsonlogger.*",
-    "great_expectations.*",
-    "sentence_transformers.*",
-    "cinelake.data_quality.*",
-    "cinelake.mcp_server.*",
-    "cinelake.observability.logging_json",
-]
-ignore_missing_imports = true
-ignore_errors = true
+[[tool.mypy.overrides]] # Sobrescritas de regras de tipagem para módulos específicos
+module = [ # Lista de módulos ou arquivos sujeitos às exceções de verificação
+    "mcp.*", # Módulo MCP externo
+    "pythonjsonlogger.*", # Módulo Python JSON Logger externo
+    "great_expectations.*", # Módulo Great Expectations externo
+    "sentence_transformers.*", # Módulo Sentence Transformers externo
+    "cinelake.data_quality.*", # Módulo interno de qualidade de dados
+    "cinelake.mcp_server.*", # Módulo interno de servidor MCP
+    "cinelake.observability.logging_json", # Módulo interno de formatação de logs JSON
+] # Fim da lista de módulos com regras personalizadas
+ignore_missing_imports = true # Desativa o erro para imports sem stubs de tipo nesses módulos
+ignore_errors = true # Ignora todos os erros de verificação de tipo para os módulos especificados acima
 
-
-[tool.pytest.ini_options]
-testpaths = ["tests"]
-addopts = "-q"
-markers = [
-    "integration: marks tests as integration tests (deselect with '-m \"not integration\"')",
-]
+[tool.pytest.ini_options] # Configuração do framework de testes pytest
+testpaths = ["tests"] # Diretório onde os arquivos de testes automatizados estão localizados
+addopts = "-q" # Opções padrão passadas ao pytest (modo quieto/silencioso)
+markers = [ # Marcações personalizadas para categorização de testes
+    "integration: marks tests as integration tests (deselect with '-m \"not integration\"')", # Marca testes como testes de integração
+] # Fim da lista de marcações
