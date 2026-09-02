@@ -122,3 +122,47 @@ def recomendacoes_usuario(
     else:
         # Lança exceção HTTP 400 Bad Request se um nome de modelo inválido for informado
         raise HTTPException(status_code=400, detail="Modelo inválido")
+
+
+# Define o endpoint HTTP GET na rota '/model/{model_name}' para obter recomendações de um modelo específico salvo no banco
+@router.get("/model/{model_name}", summary="Retorna recomendações de um modelo específico")
+# Define a função manipuladora da rota recebendo model_name, user_id opcional e top_n
+def recomendacoes_modelo(
+    model_name: str,
+    user_id: int | None = Query(None, description="ID do usuário; se omitido, usa o primeiro usuário"),
+    top_n: int = Query(10, ge=1, le=100),
+) -> dict[str, Any]:
+    # Docstring da função descrevendo a consulta de recomendações do modelo especificado
+    """Retorna recomendações de um modelo para um usuário."""
+    # Obtém o objeto Engine de conexão com o banco de dados
+    engine = get_engine()
+    # Abre um bloco de conexão com o banco de dados
+    with engine.connect() as conn:
+        # Se o user_id não foi informado na requisição
+        if user_id is None:
+            # Consulta o menor user_id cadastrado para o modelo especificado na tabela recommendations
+            user_id = conn.execute(
+                text("SELECT MIN(user_id) FROM recommendations WHERE model_name = :modelo"),
+                {"modelo": model_name},
+            ).scalar()
+        # Se nenhum user_id for encontrado (modelo sem recomendações)
+        if user_id is None:
+            # Retorna estrutura de recomendações vazia
+            return {"modelo": model_name, "user_id": None, "recomendacoes": []}
+
+        # Executa a consulta SQL para buscar as recomendações salvas para o modelo e usuário
+        resultado = conn.execute(
+            text("""
+                SELECT movie_id, score, rank
+                FROM recommendations
+                WHERE model_name = :modelo AND user_id = :user_id
+                ORDER BY rank
+                LIMIT :top_n
+            """),
+            {"modelo": model_name, "user_id": user_id, "top_n": top_n},
+        ).fetchall()
+
+    # Mapeia as linhas retornadas em uma lista de dicionários contendo movie_id, score e rank
+    filmes = [{"movie_id": row[0], "score": row[1], "rank": row[2]} for row in resultado]
+    # Retorna o objeto JSON com o nome do modelo, ID do usuário e lista de filmes
+    return {"modelo": model_name, "user_id": user_id, "recomendacoes": filmes}

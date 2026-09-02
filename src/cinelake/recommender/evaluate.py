@@ -10,6 +10,9 @@ from typing import Any
 # Importa a biblioteca pandas para manipulação e análise de DataFrames
 import pandas as pd
 
+# Importa a função text do SQLAlchemy para construção de queries SQL parametrizadas
+from sqlalchemy import text
+
 # Importa a função get_engine do banco de dados do projeto CineLake
 from cinelake.db import get_engine
 
@@ -142,3 +145,106 @@ def avaliar_modelo_popularidade(top_k: int = 10) -> dict[str, Any]:
     logger.info("Resultado da avaliação: %s", resumo)
     # Retorna o dicionário de resumo das métricas
     return resumo
+
+
+# Função pública para avaliar um modelo específico utilizando as recomendações gravadas no banco
+def avaliar_modelo(model_name: str, top_k: int = 10) -> dict[str, Any]:
+    # Docstring da função descrevendo a avaliação por modelo gravado
+    """
+    Avalia um modelo específico usando as recomendações salvas.
+
+    Args:
+        model_name: Nome do modelo (ex.: 'popularity_baseline', 'content_based', etc.)
+        top_k: Número de recomendações a considerar.
+
+    Returns:
+        Dicionário com métricas.
+    """
+    # Obtém o Engine de conexão com o banco de dados
+    engine = get_engine()
+    # Executa a partição dos dados dividindo em treino e teste com base temporal
+    treino, teste = _dividir_treino_teste()
+
+    # Caso um dos dois conjuntos esteja vazio
+    if treino.empty or teste.empty:
+        # Retorna dicionário com sinalização de erro
+        return {"error": "dados insuficientes"}
+
+    # Carrega do banco de dados as recomendações salvas para o modelo informado até o limite top_k
+    with engine.connect() as conn:
+        recs = pd.read_sql(
+            text("SELECT user_id, movie_id, rank FROM recommendations WHERE model_name = :modelo AND rank <= :top_k"),
+            conn,
+            params={"modelo": model_name, "top_k": top_k},
+        )
+
+    # Se não houver nenhuma recomendação gravada para este modelo
+    if recs.empty:
+        # Retorna dicionário com sinalização de erro
+        return {"error": "sem recomendações para este modelo"}
+
+    # Cria coluna booleana no teste identificando filmes relevantes (nota maior ou igual a 3.5)
+    teste["relevante"] = (teste["rating"] >= 3.5).astype(int)
+    # Agrupa por usuário os filmes relevantes consumidos no conjunto de teste
+    relevantes_por_user = teste[teste["relevante"] == 1].groupby("user_id")["movie_id"].apply(list).to_dict()
+
+    # Inicializa acumuladores de métricas
+    precision_total = 0.0
+    recall_total = 0.0
+    hit = 0
+    total_usuarios = 0
+
+    # Percorre cada usuário e seus filmes relevantes do teste
+    for user, filmes_relevantes in relevantes_por_user.items():
+        # Incrementa a contagem de usuários
+        total_usuarios += 1
+        # Filtra os filmes recomendados ao usuário atual pelo modelo
+        recomendados = recs[recs["user_id"] == user]["movie_id"].tolist()
+        # Calcula a interseção entre filmes recomendados e filmes relevantes do teste
+        acertos = len(set(recomendados) & set(filmes_relevantes))
+
+        # Calcula a precisão do usuário
+        precision = acertos / len(recomendados) if recomendados else 0.0
+        # Calcula o recall do usuário
+        recall = acertos / len(filmes_relevantes) if filmes_relevantes else 0.0
+        # Incrementa o hit caso tenha ocorrido pelo menos 1 acerto
+        hit += 1 if acertos > 0 else 0
+
+        # Acumula a precisão na soma total
+        precision_total += precision
+        # Acumula o recall na soma total
+        recall_total += recall
+
+    # Monta o dicionário com as métricas agregadas do modelo
+    resumo = {
+        "model_name": model_name,
+        "precision_medio": precision_total / total_usuarios if total_usuarios else 0.0,
+        "recall_medio": recall_total / total_usuarios if total_usuarios else 0.0,
+        "hit_rate": hit / total_usuarios if total_usuarios else 0.0,
+    }
+    # Retorna o dicionário com os resultados
+    return resumo
+
+
+# Função pública para avaliar todos os modelos que possuem recomendações salvas na tabela 'recommendations'
+def avaliar_todos_modelos(top_k: int = 10) -> list[dict[str, Any]]:
+    # Docstring da função descrevendo a avaliação em lote de todos os modelos
+    """Avalia todos os modelos que possuem recomendações salvas."""
+    # Obtém a instância de conexão do banco de dados
+    engine = get_engine()
+    # Conecta ao banco para buscar a lista de todos os nomes de modelos distintos salvos na tabela recommendations
+    with engine.connect() as conn:
+        modelos = [row[0] for row in conn.execute(text("SELECT DISTINCT model_name FROM recommendations")).fetchall()]
+
+    # Inicializa a lista de resultados para armazenar o resumo de cada modelo
+    resultados = []
+    # Percorre cada nome de modelo retornado
+    for modelo in modelos:
+        # Executa a função avaliar_modelo para o modelo atual
+        res = avaliar_modelo(modelo, top_k)
+        # Adiciona o resultado à lista final
+        resultados.append(res)
+        # Registra no log o resultado obtido para o modelo
+        logger.info("Modelo %s: %s", modelo, res)
+    # Retorna a lista contendo as métricas de todos os modelos avaliados
+    return resultados
