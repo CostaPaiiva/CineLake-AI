@@ -160,6 +160,48 @@ def main() -> None:
     # Vincula o subcomando à função de geração de recomendações
     parser_rec.set_defaults(func=_cmd_generate_popular)
 
+    # 13. Subcomando: train-content-based-model (Treina/calcula similaridade content-based)
+    parser_cb = subparsers.add_parser("train-content-based-model", help="Treina/calcula similaridade content-based")
+    # Vincula o subcomando à função de execução do treino content-based
+    parser_cb.set_defaults(func=_cmd_train_content_based)
+
+    # 14. Subcomando: generate-content-recommendations (Gera recomendações content-based)
+    parser_gen_cb = subparsers.add_parser("generate-content-recommendations", help="Gera recomendações content-based")
+    # Adiciona argumento --top-n para definir o número de recomendações por usuário
+    parser_gen_cb.add_argument("--top-n", type=int, default=100, help="Número de recomendações por usuário")
+    # Vincula o subcomando à função de geração de recomendações content-based
+    parser_gen_cb.set_defaults(func=_cmd_generate_content_based)
+
+    # 15. Subcomando: train-collaborative-model (Treina/calcula similaridade colaborativa)
+    parser_cf = subparsers.add_parser("train-collaborative-model", help="Treina/calcula similaridade colaborativa")
+    # Vincula o subcomando à função de execução do treino colaborativo
+    parser_cf.set_defaults(func=_cmd_train_collaborative)
+
+    # 16. Subcomando: generate-collaborative-recommendations (Gera recomendações colaborativas)
+    parser_gen_cf = subparsers.add_parser("generate-collaborative-recommendations", help="Gera recomendações colaborativas")
+    # Adiciona argumento --top-n para definir o número de recomendações por usuário
+    parser_gen_cf.add_argument("--top-n", type=int, default=100, help="Número de recomendações por usuário")
+    # Vincula o subcomando à função de geração de recomendações colaborativas
+    parser_gen_cf.set_defaults(func=_cmd_generate_collaborative)
+
+    # 17. Subcomando: generate-hybrid-recommendations (Gera recomendações híbridas)
+    parser_gen_hy = subparsers.add_parser("generate-hybrid-recommendations", help="Gera recomendações híbridas")
+    # Adiciona argumento --top-n para definir o número de recomendações por usuário
+    parser_gen_hy.add_argument("--top-n", type=int, default=100, help="Número de recomendações por usuário")
+    # Adiciona argumento --peso-content para o peso do modelo content-based
+    parser_gen_hy.add_argument("--peso-content", type=float, default=0.4, help="Peso do content-based")
+    # Adiciona argumento --peso-collab para o peso do modelo colaborativo
+    parser_gen_hy.add_argument("--peso-collab", type=float, default=0.6, help="Peso do collaborative")
+    # Vincula o subcomando à função de geração de recomendações híbridas
+    parser_gen_hy.set_defaults(func=_cmd_generate_hybrid)
+
+    # 18. Subcomando: evaluate-all-models (Avalia todos os modelos)
+    parser_eval_models = subparsers.add_parser("evaluate-all-models", help="Avalia todos os modelos")
+    # Adiciona argumento --top-k para definir o limite de corte na avaliação
+    parser_eval_models.add_argument("--top-k", type=int, default=10, help="Top-K para avaliação")
+    # Vincula o subcomando à função de avaliação de todos os modelos
+    parser_eval_models.set_defaults(func=_cmd_evaluate_all_models)
+
     # Processa os argumentos fornecidos pelo usuário no terminal
     args = parser.parse_args()
     # Executa a função vinculada ao subcomando escolhido
@@ -293,6 +335,7 @@ def _cmd_train_popularity(args: argparse.Namespace) -> None:
     """Treina modelo de popularidade."""
     # Importação tardia da função calcular_popularidade para otimizar o tempo de inicialização da CLI
     from cinelake.recommender.popularity import calcular_popularidade
+
     # Obtém o logger configurado para este módulo
     logger = logging.getLogger(__name__)
     # Executa a função que calcula a popularidade dos filmes
@@ -307,12 +350,111 @@ def _cmd_generate_popular(args: argparse.Namespace) -> None:
     """Gera recomendações populares e grava na tabela."""
     # Importação tardia da função gerar_recomendacoes_populares
     from cinelake.recommender.popularity import gerar_recomendacoes_populares
+
     # Obtém o logger configurado para este módulo
     logger = logging.getLogger(__name__)
     # Invoca a função que gera e grava as recomendações no banco de dados passando a quantidade top_n
     gerar_recomendacoes_populares(top_n=args.top_n)
     # Registra no log a confirmação da geração das recomendações
     logger.info("Recomendações geradas")
+
+
+# Define o comando CLI para treinar/calcular a similaridade de itens baseada em conteúdo
+def _cmd_train_content_based(args: argparse.Namespace) -> None:
+    # Docstring do comando de cálculo de similaridade content-based
+    """Treina/calcula similaridade content-based."""
+    # Importação tardia da função calcular_similaridade_itens
+    from cinelake.recommender.content_based import calcular_similaridade_itens
+
+    # Obtém o logger configurado para este módulo
+    logger = logging.getLogger(__name__)
+    # Executa o cálculo de similaridade de itens por conteúdo
+    df = calcular_similaridade_itens()
+    # Registra no log a quantidade de pares de similaridade calculados
+    logger.info("Similaridade content-based calculada: %d pares", len(df))
+
+
+# Define o comando CLI para gerar e salvar as recomendações baseadas em conteúdo
+def _cmd_generate_content_based(args: argparse.Namespace) -> None:
+    # Docstring do comando de geração de recomendações content-based
+    """Gera recomendações content-based."""
+    # Importação tardia da função gerar_recomendacoes_content_based
+    from cinelake.recommender.content_based import gerar_recomendacoes_content_based
+
+    # Obtém o logger configurado para este módulo
+    logger = logging.getLogger(__name__)
+    # Executa a geração de recomendações passando a quantidade top_n
+    gerar_recomendacoes_content_based(top_n=args.top_n)
+    # Registra no log a conclusão do processo
+    logger.info("Recomendações content-based geradas")
+
+
+# Define o comando CLI para treinar/calcula a similaridade colaborativa item-item
+def _cmd_train_collaborative(args: argparse.Namespace) -> None:
+    # Docstring do comando de cálculo de similaridade colaborativa
+    """Treina/calcula similaridade colaborativa."""
+    # Importação tardia da função calcular_similaridade_itens_colaborativa
+    from cinelake.recommender.collaborative import (
+        calcular_similaridade_itens_colaborativa,
+    )
+
+    # Obtém o logger configurado para este módulo
+    logger = logging.getLogger(__name__)
+    # Executa o cálculo da similaridade colaborativa
+    df = calcular_similaridade_itens_colaborativa()
+    # Registra no log a quantidade de pares de similaridade calculados
+    logger.info("Similaridade colaborativa calculada: %d pares", len(df))
+
+
+# Define o comando CLI para gerar e salvar as recomendações colaborativas item-item
+def _cmd_generate_collaborative(args: argparse.Namespace) -> None:
+    # Docstring do comando de geração de recomendações colaborativas
+    """Gera recomendações colaborativas."""
+    # Importação tardia da função gerar_recomendacoes_colaborativas
+    from cinelake.recommender.collaborative import gerar_recomendacoes_colaborativas
+
+    # Obtém o logger configurado para este módulo
+    logger = logging.getLogger(__name__)
+    # Executa a geração de recomendações colaborativas com o parâmetro top_n
+    gerar_recomendacoes_colaborativas(top_n=args.top_n)
+    # Registra no log a conclusão do processo
+    logger.info("Recomendações colaborativas geradas")
+
+
+# Define o comando CLI para gerar e salvar as recomendações híbridas
+def _cmd_generate_hybrid(args: argparse.Namespace) -> None:
+    # Docstring do comando de geração de recomendações híbridas
+    """Gera recomendações híbridas."""
+    # Importação tardia da função gerar_recomendacoes_hibridas
+    from cinelake.recommender.hybrid import gerar_recomendacoes_hibridas
+
+    # Obtém o logger configurado para este módulo
+    logger = logging.getLogger(__name__)
+    # Executa a geração de recomendações híbridas passando os pesos e top_n
+    gerar_recomendacoes_hibridas(
+        top_n=args.top_n, peso_content=args.peso_content, peso_collab=args.peso_collab
+    )
+    # Registra no log a conclusão do processo
+    logger.info("Recomendações híbridas geradas")
+
+
+# Define o comando CLI para executar a avaliação unificada de todos os modelos
+def _cmd_evaluate_all_models(args: argparse.Namespace) -> None:
+    # Docstring do comando de avaliação de modelos
+    """Avalia todos os modelos."""
+    # Importação tardia da função avaliar_todos_modelos
+    from cinelake.recommender.evaluate import avaliar_todos_modelos
+
+    # Obtém o logger configurado para este módulo
+    logger = logging.getLogger(__name__)
+    # Executa a avaliação de todos os modelos salvos para o limite top_k
+    resultados = avaliar_todos_modelos(top_k=args.top_k)
+    # Percorre e imprime os resultados obtidos para cada modelo
+    for res in resultados:
+        # Imprime o resultado individual do modelo
+        print(res)
+    # Registra no log a conclusão da avaliação de todos os modelos
+    logger.info("Avaliação de todos os modelos concluída")
 
 
 # Ponto de entrada padrão para execução via módulo (ex: python -m cinelake)
