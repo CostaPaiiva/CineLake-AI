@@ -202,8 +202,18 @@ def main() -> None:
     # Vincula o subcomando à função de avaliação de todos os modelos
     parser_eval_models.set_defaults(func=_cmd_evaluate_all_models)
 
+    # 19. Subcomando: serve-main-api (Sobe a API principal com FastAPI e Uvicorn)
+    parser_main = subparsers.add_parser("serve-main-api", help="Sobe a API principal")
+    # Define o argumento de endereço IP/host para bind do servidor da API principal (padrão: 127.0.0.1)
+    parser_main.add_argument("--host", type=str, default="127.0.0.1", help="Host")
+    # Define o argumento de porta TCP para bind do servidor da API principal (padrão: 8002)
+    parser_main.add_argument("--port", type=int, default=8002, help="Porta")
+    # Vincula o subcomando à função que dispara a execução do servidor FastAPI principal
+    parser_main.set_defaults(func=_cmd_serve_main)
+
     # Processa os argumentos fornecidos pelo usuário no terminal
     args = parser.parse_args()
+
     # Executa a função vinculada ao subcomando escolhido
     args.func(args)
 
@@ -457,6 +467,24 @@ def _cmd_evaluate_all_models(args: argparse.Namespace) -> None:
     logger.info("Avaliação de todos os modelos concluída")
 
 
+# Define o comando CLI para iniciar o servidor web da API principal usando Uvicorn
+def _cmd_serve_main(args: argparse.Namespace) -> None:
+    # Docstring do comando de inicialização da API principal
+    """Inicia o servidor FastAPI principal."""
+    # Importação tardia do Uvicorn para servir a aplicação ASGI
+    import uvicorn
+    # Importação tardia da aplicação FastAPI principal com suporte a cache Redis
+    from cinelake.api.main import app
+
+    # Obtém o logger configurado para este módulo
+    logger = logging.getLogger(__name__)
+    # Registra no log o endereço de host e porta em que a API principal está sendo iniciada
+    logger.info("Iniciando API principal em %s:%s", args.host, args.port)
+    # Executa o servidor Uvicorn escutando nos parâmetros informados via CLI
+    uvicorn.run(app, host=args.host, port=args.port, log_level="info")
+
+
 # Ponto de entrada padrão para execução via módulo (ex: python -m cinelake)
 if __name__ == "__main__":
     main()
+
