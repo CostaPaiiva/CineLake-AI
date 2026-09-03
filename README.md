@@ -18,6 +18,23 @@ Detalhes de filmes usam Redis como cache, com TTL de cinco minutos. Configure `R
 
 O MLflow é iniciado pelo Compose em `http://127.0.0.1:5000`. Os recomendadores registram parâmetros, métricas e artefatos dos treinamentos e avaliações. PostgreSQL é usado como backend de tracking e MinIO como armazenamento de artefatos.
 
+## Streaming de eventos com Kafka
+
+O projeto agora possui um fluxo de eventos com Apache Kafka e ZooKeeper. O produtor gera eventos sintéticos de interação no tópico `movie-events`; o consumidor valida o schema, persiste eventos válidos em `event_log` e encaminha mensagens inválidas ou com falha de processamento para `movie-events-dlq`.
+
+```bash
+# Iniciar Kafka e ZooKeeper
+docker compose up -d zookeeper kafka
+
+# Produzir eventos sintéticos
+python -m cinelake produce-events --quantidade 10
+
+# Consumir, validar e persistir eventos
+python -m cinelake consume-events --max-mensagens 100
+```
+
+O consumidor utiliza commit manual de offsets, grupo `cinelake-consumer` e gravação idempotente por `event_id`. Configure o broker pela variável `KAFKA_BOOTSTRAP_SERVERS` (padrão: `127.0.0.1:9092`). A migração `0007_create_event_log.py` cria a tabela de auditoria dos eventos.
+
 ### Plataforma de engenharia de dados para o domínio cinematográfico
 
 _Ingestão confiável, Data Lake em camadas, qualidade de dados, modelagem analítica e interfaces para agentes de IA._
