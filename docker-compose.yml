@@ -107,6 +107,33 @@ services:
       minio:
         condition: service_healthy
 
+  # Serviço de cache e armazenamento em memória Redis
+  redis:
+    # Imagem oficial leve do Redis baseada em Alpine Linux
+    image: redis:7-alpine
+    # Nome do container em execução
+    container_name: cinelake-redis
+    # Reinicia o container automaticamente em caso de queda
+    restart: unless-stopped
+    # Mapeia a porta padrão 6379 apenas para acesso local (localhost)
+    ports:
+      - "127.0.0.1:6379:6379"
+    # Associa o container à rede interna cinelake-network
+    networks:
+      - cinelake-network
+    # Teste de saúde checando a resposta ao comando ping do redis-cli
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    # Limitação dos recursos de hardware alocados ao container
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"   # Limita a 0,5 núcleos de CPU
+          memory: 512M  # Limita a 512 Megabytes de memória RAM
+
   # Serviço do Prometheus para coleta de métricas
   prometheus:
     # Imagem oficial mais recente do Prometheus
