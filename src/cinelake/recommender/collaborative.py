@@ -19,6 +19,8 @@ from sqlalchemy import text
 
 # Importa a função get_engine da camada de acesso ao banco de dados do CineLake
 from cinelake.db import get_engine
+# Importa a função para log de parâmetros e métricas no MLflow
+from cinelake.mlops.tracking import log_parametros_e_metricas
 
 # Inicializa o logger específico para este módulo usando __name__
 logger = logging.getLogger(__name__)
@@ -217,6 +219,23 @@ def gerar_recomendacoes_colaborativas(
                 index=False,
                 method="multi",
             )
+
+        # Bloco try/except para avaliação e registro de métricas no MLflow
+        try:
+            # Importação local para evitar dependência circular
+            from cinelake.recommender.evaluate import avaliar_modelo
+            # Avalia offline o modelo colaborativo
+            metricas = avaliar_modelo(MODEL_NAME, top_k=10)
+            # Registra no MLflow os parâmetros e métricas
+            log_parametros_e_metricas(
+                experimento_nome="recommendations",
+                parametros={"modelo": MODEL_NAME, "top_n": top_n},
+                metricas=metricas,
+            )
+        except Exception as e:
+            # Registra aviso no log caso ocorra erro no rastreamento do MLflow
+            logger.warning("Falha ao registrar no MLflow: %s", e)
+
         # Grava mensagem de sucesso no logger detalhando a quantidade de usuários processados
         logger.info("Collaborative: recomendações geradas para %d usuários", len(usuarios))
     else:

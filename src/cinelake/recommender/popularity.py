@@ -14,6 +14,8 @@ from sqlalchemy import text
 
 # Importa a função get_engine do módulo cinelake.db para obter conexão com o banco de dados
 from cinelake.db import get_engine
+# Importa a função para log de parâmetros e métricas no MLflow
+from cinelake.mlops.tracking import log_parametros_e_metricas
 
 # Instancia o logger específico para este módulo usando o nome do próprio módulo (__name__)
 logger = logging.getLogger(__name__)
@@ -174,6 +176,22 @@ def gerar_recomendacoes_populares(top_n: int = 100, modelo: str = "popularity_ba
             # Divide a inserção em lotes de 1000 linhas para não exceder o limite de 65535 parâmetros do PostgreSQL
             chunksize=1000,
         )
+
+    # Bloco try/except para avaliação e rastreamento no MLflow sem interromper o fluxo principal em caso de falha
+    try:
+        # Importa a função de avaliação offline de popularidade localmente para evitar dependências circulares
+        from cinelake.recommender.evaluate import avaliar_modelo_popularidade
+        # Avalia o modelo de popularidade e retorna o dicionário com as métricas calculadas
+        metricas = avaliar_modelo_popularidade(top_k=10)
+        # Registra os parâmetros e métricas no experimento 'recommendations' no MLflow
+        log_parametros_e_metricas(
+            experimento_nome="recommendations",
+            parametros={"modelo": modelo, "top_n": top_n},
+            metricas=metricas,
+        )
+    except Exception as e:
+        # Registra um aviso no log caso ocorra erro no rastreamento do MLflow
+        logger.warning("Falha ao registrar no MLflow: %s", e)
 
     # Registra no log a conclusão bem sucedida do processo informando a quantidade de usuários
     logger.info("Recomendações populares geradas para %d usuários", len(usuarios))

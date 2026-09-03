@@ -15,10 +15,11 @@ from sqlalchemy import text
 
 # Importa a função get_engine da camada de acesso ao banco de dados do CineLake
 from cinelake.db import get_engine
-
 # Importa os nomes oficiais dos modelos base para consulta na tabela de recomendações
 from cinelake.recommender.collaborative import MODEL_NAME as CF_MODEL
 from cinelake.recommender.content_based import MODEL_NAME as CB_MODEL
+# Importa a função para log de parâmetros e métricas no MLflow
+from cinelake.mlops.tracking import log_parametros_e_metricas
 
 # Inicializa o logger específico para este módulo usando __name__
 logger = logging.getLogger(__name__)
@@ -149,6 +150,28 @@ def gerar_recomendacoes_hibridas(
                 index=False,
                 method="multi",
             )
+
+        # Bloco try/except para avaliação e log do modelo híbrido no MLflow
+        try:
+            # Importação local para evitar dependência circular
+            from cinelake.recommender.evaluate import avaliar_modelo
+            # Avalia offline o modelo híbrido
+            metricas = avaliar_modelo(MODEL_NAME, top_k=10)
+            # Registra no MLflow os hiperparâmetros (pesos, top_n) e métricas calculadas
+            log_parametros_e_metricas(
+                experimento_nome="recommendations",
+                parametros={
+                    "modelo": MODEL_NAME,
+                    "top_n": top_n,
+                    "peso_content": peso_content,
+                    "peso_collab": peso_collab,
+                },
+                metricas=metricas,
+            )
+        except Exception as e:
+            # Registra aviso no log caso ocorra erro na comunicação com MLflow
+            logger.warning("Falha ao registrar no MLflow: %s", e)
+
         # Registra a mensagem de sucesso detalhando a quantidade de usuários contemplados
         logger.info("Hybrid: recomendações geradas para %d usuários", combinado["user_id"].nunique())
     else:

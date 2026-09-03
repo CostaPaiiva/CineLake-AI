@@ -198,53 +198,49 @@ def avaliar_modelo(model_name: str, top_k: int = 10) -> dict[str, Any]:
     for user, filmes_relevantes in relevantes_por_user.items():
         # Incrementa a contagem de usuários
         total_usuarios += 1
-        # Filtra os filmes recomendados ao usuário atual pelo modelo
-        recomendados = recs[recs["user_id"] == user]["movie_id"].tolist()
-        # Calcula a interseção entre filmes recomendados e filmes relevantes do teste
-        acertos = len(set(recomendados) & set(filmes_relevantes))
+        # Filtra os filmes recomendados para o usuário atual
+        recs_user = recs[recs["user_id"] == user]["movie_id"].tolist()
+        # Calcula a interseção entre recomendados e relevantes
+        acertos = len(set(recs_user) & set(filmes_relevantes))
 
         # Calcula a precisão do usuário
-        precision = acertos / len(recomendados) if recomendados else 0.0
+        precision = acertos / len(recs_user) if recs_user else 0
         # Calcula o recall do usuário
-        recall = acertos / len(filmes_relevantes) if filmes_relevantes else 0.0
-        # Incrementa o hit caso tenha ocorrido pelo menos 1 acerto
+        recall = acertos / len(filmes_relevantes) if filmes_relevantes else 0
+        # Soma hit se houver pelo menos 1 acerto
         hit += 1 if acertos > 0 else 0
 
-        # Acumula a precisão na soma total
+        # Acumula as métricas
         precision_total += precision
-        # Acumula o recall na soma total
         recall_total += recall
 
-    # Monta o dicionário com as métricas agregadas do modelo
+    # Monta o dicionário de resultado com as médias gerais
     resumo = {
-        "model_name": model_name,
-        "precision_medio": precision_total / total_usuarios if total_usuarios else 0.0,
-        "recall_medio": recall_total / total_usuarios if total_usuarios else 0.0,
-        "hit_rate": hit / total_usuarios if total_usuarios else 0.0,
+        "precision_medio": precision_total / total_usuarios if total_usuarios else 0,
+        "recall_medio": recall_total / total_usuarios if total_usuarios else 0,
+        "hit_rate": hit / total_usuarios if total_usuarios else 0,
     }
-    # Retorna o dicionário com os resultados
+
+    # Registra o log com o resultado
+    logger.info("Resultado da avaliação (%s): %s", model_name, resumo)
+    # Retorna o dicionário de resumo
     return resumo
 
 
-# Função pública para avaliar todos os modelos que possuem recomendações salvas na tabela 'recommendations'
-def avaliar_todos_modelos(top_k: int = 10) -> list[dict[str, Any]]:
-    # Docstring da função descrevendo a avaliação em lote de todos os modelos
-    """Avalia todos os modelos que possuem recomendações salvas."""
-    # Obtém a instância de conexão do banco de dados
-    engine = get_engine()
-    # Conecta ao banco para buscar a lista de todos os nomes de modelos distintos salvos na tabela recommendations
-    with engine.connect() as conn:
-        modelos = [row[0] for row in conn.execute(text("SELECT DISTINCT model_name FROM recommendations")).fetchall()]
+# Função pública para avaliar um modelo e registrar os resultados diretamente no MLflow
+def avaliar_e_registrar_modelo(model_name: str, top_k: int = 10) -> dict[str, Any]:
+    # Docstring da função descrevendo a avaliação e log no MLflow
+    """Avalia um modelo e registra métricas no MLflow."""
+    # Importa a função de log de métricas e parâmetros do módulo MLOps
+    from cinelake.mlops.tracking import log_parametros_e_metricas
 
-    # Inicializa a lista de resultados para armazenar o resumo de cada modelo
-    resultados = []
-    # Percorre cada nome de modelo retornado
-    for modelo in modelos:
-        # Executa a função avaliar_modelo para o modelo atual
-        res = avaliar_modelo(modelo, top_k)
-        # Adiciona o resultado à lista final
-        resultados.append(res)
-        # Registra no log o resultado obtido para o modelo
-        logger.info("Modelo %s: %s", modelo, res)
-    # Retorna a lista contendo as métricas de todos os modelos avaliados
-    return resultados
+    # Executa a avaliação do modelo informado obtendo o dicionário de métricas
+    metricas = avaliar_modelo(model_name, top_k)
+    # Envia os parâmetros e as métricas calculadas para o servidor do MLflow no experimento 'recommendations_evaluation'
+    log_parametros_e_metricas(
+        experimento_nome="recommendations_evaluation",
+        parametros={"model_name": model_name, "top_k": top_k},
+        metricas=metricas,
+    )
+    # Retorna o dicionário com as métricas geradas
+    return metricas
