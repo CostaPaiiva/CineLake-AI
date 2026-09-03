@@ -32,7 +32,9 @@ dependencies = [ # Lista de dependências diretas de produção necessárias par
     "scikit-surprise>=1.1.3", # Algoritmos e ferramentas focados especificamente em sistemas de recomendação
     "numpy>=1.26", # Operações matemáticas e computação numérica eficiente com arrays multidimensionais
     "scipy>=1.12", # Algoritmos científicos, otimização, álgebra linear e computação estatística avançada
+    "mlflow>=2.12", # Plataforma para gerenciamento do ciclo de vida de aprendizado de máquina (MLOps)
 ] # Fim da lista de dependências de produção
+
 
 [project.optional-dependencies] # Dependências opcionais separadas por grupos (ex: desenvolvimento, testes)
 dev = [ # Grupo de dependências voltadas para ambiente de desenvolvimento e testes
@@ -73,9 +75,12 @@ module = [ # Lista de módulos ou arquivos sujeitos às exceções de verificaç
     "pythonjsonlogger.*", # Módulo Python JSON Logger externo
     "great_expectations.*", # Módulo Great Expectations externo
     "sentence_transformers.*", # Módulo Sentence Transformers externo
+    "mlflow.*", # Módulo MLflow externo
     "cinelake.data_quality.*", # Módulo interno de qualidade de dados
     "cinelake.mcp_server.*", # Módulo interno de servidor MCP
+    "cinelake.mlops.*", # Módulo interno de MLOps e rastreamento do MLflow
     "cinelake.observability.logging_json", # Módulo interno de formatação de logs JSON
+
 ] # Fim da lista de módulos com regras personalizadas
 ignore_missing_imports = true # Desativa o erro para imports sem stubs de tipo nesses módulos
 ignore_errors = true # Ignora todos os erros de verificação de tipo para os módulos especificados acima

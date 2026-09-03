@@ -29,6 +29,10 @@ class Settings:
     minio_endpoint: str
     minio_bucket: str
     minio_use_ssl: bool
+    mlflow_tracking_uri: str
+    mlflow_s3_endpoint_url: str
+    mlflow_s3_ignore_tls: bool
+    mlflow_artifact_bucket: str
 
     @classmethod
     def from_env(cls) -> "Settings":
@@ -61,6 +65,12 @@ class Settings:
         # Converte a string do SSL para um valor booleano Python (True/False)
         minio_use_ssl = os.getenv("MINIO_USE_SSL", "false").lower() == "true"
 
+        # Configurações do MLflow com valores padrão (fallback)
+        mlflow_tracking_uri = os.getenv("MLFLOW_TRACKING_URI", "http://127.0.0.1:5000")
+        mlflow_s3_endpoint_url = os.getenv("MLFLOW_S3_ENDPOINT_URL", "http://127.0.0.1:9000")
+        mlflow_s3_ignore_tls = os.getenv("MLFLOW_S3_IGNORE_TLS", "true").lower() == "true"
+        mlflow_artifact_bucket = os.getenv("MLFLOW_ARTIFACT_BUCKET", "mlflow-artifacts")
+
         # Retorna a instância da classe Settings populada com todas as configurações
         return cls(
             project_name="CineLake AI",
@@ -78,7 +88,12 @@ class Settings:
             minio_endpoint=minio_endpoint,
             minio_bucket=minio_bucket,
             minio_use_ssl=minio_use_ssl,
+            mlflow_tracking_uri=mlflow_tracking_uri,
+            mlflow_s3_endpoint_url=mlflow_s3_endpoint_url,
+            mlflow_s3_ignore_tls=mlflow_s3_ignore_tls,
+            mlflow_artifact_bucket=mlflow_artifact_bucket,
         )
+
 
 
 # Cria uma instância única global das configurações para ser importada e usada por todo o projeto
