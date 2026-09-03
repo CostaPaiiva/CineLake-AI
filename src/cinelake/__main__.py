@@ -211,8 +211,23 @@ def main() -> None:
     # Vincula o subcomando à função que dispara a execução do servidor FastAPI principal
     parser_main.set_defaults(func=_cmd_serve_main)
 
+    # 20. Subcomando: produce-events (Produz eventos de teste para o Kafka)
+    parser_prod = subparsers.add_parser("produce-events", help="Produz eventos para Kafka")
+    # Adiciona o argumento --quantidade para definir o número de eventos sintéticos a enviar
+    parser_prod.add_argument("--quantidade", type=int, default=10, help="Número de eventos")
+    # Vincula o subcomando à função que dispara a produção de eventos no Kafka
+    parser_prod.set_defaults(func=_cmd_produce_events)
+
+    # 21. Subcomando: consume-events (Consome e valida eventos do Kafka)
+    parser_cons = subparsers.add_parser("consume-events", help="Consome eventos do Kafka")
+    # Adiciona o argumento --max-mensagens para limitar a quantidade de eventos a serem consumidos
+    parser_cons.add_argument("--max-mensagens", type=int, default=100, help="Máximo de mensagens")
+    # Vincula o subcomando à função que executa o consumo e validação de mensagens
+    parser_cons.set_defaults(func=_cmd_consume_events)
+
     # Processa os argumentos fornecidos pelo usuário no terminal
     args = parser.parse_args()
+
 
     # Executa a função vinculada ao subcomando escolhido
     args.func(args)
@@ -484,7 +499,38 @@ def _cmd_serve_main(args: argparse.Namespace) -> None:
     uvicorn.run(app, host=args.host, port=args.port, log_level="info")
 
 
+# Define a função de tratamento para o comando de produção de eventos de teste no Kafka
+def _cmd_produce_events(args: argparse.Namespace) -> None:
+    # Docstring da função de tratamento do produtor
+    """Produz eventos de teste."""
+    # Importação tardia da função de produção de eventos do módulo de streaming
+    from cinelake.streaming.producer import produzir_eventos
+
+    # Obtém a instância do logger para este módulo
+    logger = logging.getLogger(__name__)
+    # Executa a geração e envio dos eventos para o tópico do Kafka passando a quantidade fornecida
+    produzir_eventos(quantidade=args.quantidade)
+    # Registra no log a confirmação da execução do comando de envio de eventos
+    logger.info("Eventos produzidos")
+
+
+# Define a função de tratamento para o comando de consumo e validação de eventos do Kafka
+def _cmd_consume_events(args: argparse.Namespace) -> None:
+    # Docstring da função de tratamento do consumidor
+    """Consome eventos do Kafka."""
+    # Importação tardia da função de consumo de eventos do módulo de streaming
+    from cinelake.streaming.consumer import consumir_eventos
+
+    # Obtém a instância do logger para este módulo
+    logger = logging.getLogger(__name__)
+    # Executa o loop de consumo do Kafka com o limite máximo de mensagens informado
+    consumir_eventos(max_mensagens=args.max_mensagens)
+    # Registra no log o encerramento do processo de consumo
+    logger.info("Consumo encerrado")
+
+
 # Ponto de entrada padrão para execução via módulo (ex: python -m cinelake)
 if __name__ == "__main__":
     main()
+
 
