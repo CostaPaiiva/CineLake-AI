@@ -72,6 +72,41 @@ services:
           cpus: "1.0"   # Limita o uso a no máximo 1 núcleo de CPU
           memory: 1G    # Limita o uso a no máximo 1 Gigabyte de memória RAM
 
+  # Serviço do MLflow para rastreamento de experimentos e registro de modelos de ML
+  mlflow:
+    # Imagem docker oficial do MLflow mantida no GitHub Container Registry
+    image: ghcr.io/mlflow/mlflow:latest
+    # Nome do container quando estiver em execução
+    container_name: cinelake-mlflow
+    # Reinicia o container automaticamente caso ele caia, a menos que seja parado manualmente
+    restart: unless-stopped
+    # Variáveis de ambiente de configuração do MLflow e autenticação de armazenamento de artefatos
+    environment:
+      MLFLOW_TRACKING_URI: http://127.0.0.1:5000  # URL base de rastreamento do servidor MLflow
+      AWS_ACCESS_KEY_ID: ${MINIO_ACCESS_KEY}      # Chave de acesso S3 obtida das variáveis do MinIO
+      AWS_SECRET_ACCESS_KEY: ${MINIO_SECRET_KEY}  # Chave secreta S3 obtida das variáveis do MinIO
+      MLFLOW_S3_ENDPOINT_URL: http://minio:9000   # URL do endpoint S3 apontando para o container minio
+      MLFLOW_S3_IGNORE_TLS: "true"                # Ignora validação de certificados TLS (conexão HTTP sem SSL)
+    # Mapeamento de portas (libera a porta 5000 apenas para o localhost/máquina local)
+    ports:
+      - "127.0.0.1:5000:5000"
+    # Rede em que o container irá rodar (permite comunicação com postgres e minio)
+    networks:
+      - cinelake-network
+    # Comando de inicialização do servidor MLflow com backend PostgreSQL e artefatos no MinIO S3
+    command: >
+      mlflow server
+      --backend-store-uri postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      --default-artifact-root s3://mlflow-artifacts
+      --host 0.0.0.0
+      --port 5000
+    # Garante que o MLflow só iniciará após os serviços do PostgreSQL e MinIO estarem saudáveis (healthy)
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+
   # Serviço do Prometheus para coleta de métricas
   prometheus:
     # Imagem oficial mais recente do Prometheus
