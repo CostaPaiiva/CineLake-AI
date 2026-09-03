@@ -34,7 +34,9 @@ dependencies = [ # Lista de dependências diretas de produção necessárias par
     "scipy>=1.12", # Algoritmos científicos, otimização, álgebra linear e computação estatística avançada
     "mlflow>=2.12", # Plataforma para gerenciamento do ciclo de vida de aprendizado de máquina (MLOps)
     "redis>=5.0", # Cliente em Python para interação com o banco de dados em memória e cache Redis
+    "kafka-python>=2.0", # Cliente Python para produção e consumo de mensagens no Apache Kafka
 ] # Fim da lista de dependências de produção
+
 
 
 
@@ -79,7 +81,9 @@ module = [ # Lista de módulos ou arquivos sujeitos às exceções de verificaç
     "sentence_transformers.*", # Módulo Sentence Transformers externo
     "mlflow.*", # Módulo MLflow externo
     "redis.*", # Módulo Redis cliente externo
+    "kafka.*", # Módulo Kafka-python externo
     "cinelake.data_quality.*", # Módulo interno de qualidade de dados
+
 
     "cinelake.mcp_server.*", # Módulo interno de servidor MCP
     "cinelake.mlops.*", # Módulo interno de MLOps e rastreamento do MLflow

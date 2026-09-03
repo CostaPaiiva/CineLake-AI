@@ -2,6 +2,22 @@
 
 # CineLake AI
 
+> Atualização: o projeto também conta com API principal FastAPI, cache Redis e tracking de experimentos dos modelos com MLflow. Consulte a seção [API principal](#api-principal-e-mlflow).
+
+## API principal e MLflow
+
+A API principal é iniciada com:
+
+```bash
+python -m cinelake serve-main-api --host 127.0.0.1 --port 8002
+```
+
+Ela expõe `GET /health`, `GET /movies`, `GET /movies/{movie_id}`, `GET /movies/trending`, `GET /users/{user_id}/recommendations` e `POST /ratings`. A documentação Swagger fica em `http://127.0.0.1:8002/docs`.
+
+Detalhes de filmes usam Redis como cache, com TTL de cinco minutos. Configure `REDIS_HOST` e `REDIS_PORT` no `.env`; o serviço é iniciado pelo Docker Compose.
+
+O MLflow é iniciado pelo Compose em `http://127.0.0.1:5000`. Os recomendadores registram parâmetros, métricas e artefatos dos treinamentos e avaliações. PostgreSQL é usado como backend de tracking e MinIO como armazenamento de artefatos.
+
 ### Plataforma de engenharia de dados para o domínio cinematográfico
 
 _Ingestão confiável, Data Lake em camadas, qualidade de dados, modelagem analítica e interfaces para agentes de IA._

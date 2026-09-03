@@ -134,6 +134,65 @@ services:
           cpus: "0.5"   # Limita a 0,5 núcleos de CPU
           memory: 512M  # Limita a 512 Megabytes de memória RAM
 
+  # Serviço do Apache ZooKeeper para coordenação de cluster do Kafka
+  zookeeper:
+    # Imagem oficial da Confluent para o ZooKeeper
+    image: confluentinc/cp-zookeeper:7.6.0
+    # Nome do container em execução
+    container_name: cinelake-zookeeper
+    # Reinicia o container automaticamente caso ocorra alguma falha
+    restart: unless-stopped
+    # Variáveis de ambiente de configuração das portas e ticks do cliente ZooKeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181  # Porta de escuta para clientes do ZooKeeper
+      ZOOKEEPER_TICK_TIME: 2000    # Unidade básica de tempo em milissegundos utilizada pelo ZooKeeper
+    # Mapeamento de portas (libera a porta 2181 localmente)
+    ports:
+      - "127.0.0.1:2181:2181"
+    # Rede de comunicação dos containers do projeto
+    networks:
+      - cinelake-network
+    # Teste de integridade checando se o serviço respondeu com 'imok' ao comando 'ruok'
+    healthcheck:
+      test: ["CMD", "bash", "-c", "echo ruok | nc localhost 2181"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Serviço do Apache Kafka para mensageria distribuída e streaming de eventos em tempo real
+  kafka:
+    # Imagem oficial da Confluent para o Apache Kafka Broker
+    image: confluentinc/cp-kafka:7.6.0
+    # Nome do container em execução
+    container_name: cinelake-kafka
+    # Reinicia o container automaticamente caso ele caia
+    restart: unless-stopped
+    # Depende da inicialização saudável do serviço ZooKeeper
+    depends_on:
+      zookeeper:
+        condition: service_healthy
+    # Variáveis de ambiente para parametrização do broker Kafka
+    environment:
+      KAFKA_BROKER_ID: 1                                         # Identificador único do broker no cluster Kafka
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181                   # Endereço de conexão com o cluster ZooKeeper
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://127.0.0.1:9092    # Endereço exposto para conexões dos clientes produtores/consumidores
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1                 # Fator de replicação para tópicos de offsets internos
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1         # Fator de replicação para o log de transações
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1                    # Mínimo de réplicas em sincronia para transações
+      KAFKA_LOG_RETENTION_HOURS: 168                            # Tempo de retenção das mensagens em disco (168h = 7 dias)
+    # Mapeamento da porta 9092 apenas para acesso local
+    ports:
+      - "127.0.0.1:9092:9092"
+    # Rede de comunicação dos containers
+    networks:
+      - cinelake-network
+    # Verificação de integridade listando tópicos através da ferramenta de CLI do Kafka
+    healthcheck:
+      test: ["CMD", "kafka-topics", "--bootstrap-server", "127.0.0.1:9092", "--list"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+
   # Serviço do Prometheus para coleta de métricas
   prometheus:
     # Imagem oficial mais recente do Prometheus
