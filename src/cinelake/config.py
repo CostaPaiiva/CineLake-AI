@@ -62,6 +62,8 @@ class Settings:
     redis_host: str
     # Porta de comunicação da instância do Redis
     redis_port: int
+    # Lista de servidores de inicialização (bootstrap servers) do cluster Kafka
+    kafka_bootstrap_servers: str
 
     # Método de classe para instanciar as configurações lendo os valores das variáveis de ambiente
     @classmethod
@@ -105,6 +107,9 @@ class Settings:
         redis_host = os.getenv("REDIS_HOST", "127.0.0.1")
         redis_port = int(os.getenv("REDIS_PORT", "6379"))
 
+        # Configurações do Kafka com valores padrão (fallback)
+        kafka_bootstrap_servers = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "127.0.0.1:9092")
+
         # Retorna a instância da classe Settings populada com todas as configurações lidas
         return cls(
             project_name="CineLake AI",
@@ -128,7 +133,9 @@ class Settings:
             mlflow_artifact_bucket=mlflow_artifact_bucket,
             redis_host=redis_host,
             redis_port=redis_port,
+            kafka_bootstrap_servers=kafka_bootstrap_servers,
         )
+
 
 
 
