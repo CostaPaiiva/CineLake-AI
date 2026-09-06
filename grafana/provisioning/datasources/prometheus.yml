@@ -1,0 +1,15 @@
+# Versão da especificação de provisionamento de fontes de dados do Grafana
+apiVersion: 1
+
+# Lista de fontes de dados (datasources) provisionadas automaticamente
+datasources:
+  # Nome amigável da fonte de dados exibido na interface do Grafana
+  - name: Prometheus
+    # Tipo de conector do banco de dados de séries temporais
+    type: prometheus
+    # Modo de acesso através do servidor proxy interno do Grafana
+    access: proxy
+    # URL de conexão HTTP com o container do Prometheus na mesma rede Docker
+    url: http://prometheus:9090
+    # Define o Prometheus como a fonte de dados padrão para dashboards
+    isDefault: true

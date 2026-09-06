@@ -31,8 +31,14 @@ from cinelake.db import get_engine
 # Instancia o logger específico para o módulo da API
 logger = logging.getLogger(__name__)
 
+# Importa o instrumentador automático do Prometheus para o framework FastAPI
+from prometheus_fastapi_instrumentator import Instrumentator
+
 # Cria a aplicação principal FastAPI com título e versão da documentação Swagger
 app = FastAPI(title="CineLake AI - API Principal", version="1.0.0")
+
+# Instrumenta a aplicação FastAPI e expõe automaticamente a rota /metrics para coleta do Prometheus
+Instrumentator().instrument(app).expose(app)
 
 # Instancia a conexão com o cliente do Redis utilizando host, porta e decodificação automatizada das respostas para string
 redis_client = redis.Redis(
