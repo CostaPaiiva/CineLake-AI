@@ -1,26 +1,31 @@
-# Configurações globais do Prometheus
+# Configurações globais de monitoramento do Prometheus
 global:
-  # Frequência de coleta de métricas nos alvos (targets)
+  # Frequência de coleta de métricas nos alvos (targets) a cada 15 segundos
   scrape_interval: 15s
-  # Frequência de avaliação de regras de alarme/alertas
+  # Frequência de avaliação de regras de alarme/alertas a cada 15 segundos
   evaluation_interval: 15s
 
-# Definição das fontes de métricas (alvos de scrape)
+# Lista de configurações dos trabalhos de coleta de métricas (jobs de scrape)
 scrape_configs:
-  # Job responsável por coletar métricas do exportador da aplicação CineLake
-  - job_name: 'cinelake-exporter'
+  # Job responsável pela coleta de métricas de recursos do sistema operacional host via Node Exporter
+  - job_name: 'node_exporter'
+    # Definição dos alvos estáticos para a coleta de métricas
     static_configs:
-      # Endereço do exportador de métricas (rodando no host através da porta 8000)
-      - targets: ['host.docker.internal:8000']
-
-  # Job de coleta das métricas do sistema operacional (Node Exporter)
-  - job_name: 'node-exporter'
-    static_configs:
-      # Endereço e porta do serviço node-exporter na rede Docker
+      # Endereço e porta do serviço node-exporter na rede interna do Docker
       - targets: ['node-exporter:9100']
 
-  # Job de coleta das métricas do banco de dados PostgreSQL (Postgres Exporter)
-  - job_name: 'postgres-exporter'
+  # Job responsável pela coleta de métricas do banco de dados PostgreSQL via Postgres Exporter
+  - job_name: 'postgres_exporter'
+    # Definição dos alvos estáticos para a coleta de métricas
     static_configs:
-      # Endereço e porta do serviço postgres-exporter na rede Docker
+      # Endereço e porta do serviço postgres-exporter na rede interna do Docker
       - targets: ['postgres-exporter:9187']
+
+  # Job responsável pela coleta de métricas da API CineLake
+  - job_name: 'cinelake_api'
+    # Caminho do endpoint HTTP onde a API expõe suas métricas Prometheus
+    metrics_path: /metrics
+    # Definição dos alvos estáticos para a coleta de métricas
+    static_configs:
+      # IP do gateway da interface de rede Docker (172.17.0.1) e porta 8002 da API
+      - targets: ['172.17.0.1:8002']
