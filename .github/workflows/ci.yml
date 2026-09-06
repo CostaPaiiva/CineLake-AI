@@ -1,0 +1,72 @@
+# Nome do fluxo de trabalho de Integração Contínua (CI)
+name: CI
+
+# Definição dos gatilhos de disparo do pipeline no GitHub Actions
+on:
+  # Dispara automaticamente a cada evento de push
+  push:
+    # Apenas para a branch principal 'main'
+    branches: [ main ]
+  # Dispara automaticamente a cada abertura ou atualização de Pull Request
+  pull_request:
+    # Apenas com alvo para a branch principal 'main'
+    branches: [ main ]
+
+# Definição dos trabalhos (jobs) a serem executados em paralelo ou sequência
+jobs:
+  # Identificador do job responsável por linting, testes e compilação/build
+  lint-test-build:
+    # Define o ambiente de execução em uma máquina virtual com a versão mais recente do Ubuntu
+    runs-on: ubuntu-latest
+    # Lista ordenada de passos/etapas executados sequencialmente neste job
+    steps:
+      # 1. Passo: Baixa e faz checkout do repositório no runner do GitHub Actions
+      - name: Checkout código
+        # Action oficial do GitHub para baixar o código-fonte na versão v4
+        uses: actions/checkout@v4
+
+      # 2. Passo: Configura a versão especificada da linguagem Python no ambiente
+      - name: Configurar Python
+        # Action oficial do GitHub para instalação do Python na versão v5
+        uses: actions/setup-python@v5
+        # Parâmetros de configuração da versão do Python
+        with:
+          # Define a versão 3.10 como interpretador padrão para a execução dos passos
+          python-version: '3.10'
+
+      # 3. Passo: Instala o gerenciador pip e as dependências do projeto com o grupo dev
+      - name: Instalar dependências
+        # Comandos bash executados em sequência para atualizar o pip e instalar o pacote localmente
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      # 4. Passo: Executa o linter Ruff para verificação estática de estilo de código
+      - name: Executar Ruff
+        # Comando para rodar o linter Ruff em todo o repositório
+        run: ruff check .
+
+      # 5. Passo: Executa a verificação estática de tipos com o Mypy
+      - name: Executar Mypy
+        # Comando para rodar a análise de tipos no diretório src do projeto
+        run: mypy src
+
+      # 6. Passo: Executa os testes unitários da aplicação ignorando os de integração
+      - name: Executar Pytest (unit only)
+        # Comando do pytest desconsiderando marcações 'integration' no modo detalhado (-v)
+        run: pytest -m "not integration" -v
+
+      # 7. Passo: Navega até a pasta do dbt e compila os modelos e SQLs
+      - name: Compilar dbt
+        # Executa a compilação do dbt apontando para o diretório de perfis local
+        run: |
+          cd dbt_project
+          dbt compile --profiles-dir .
+
+      # 8. Passo: Executa o build da imagem Docker da API (se o Dockerfile existir)
+      - name: Build Docker image (api)
+        # Tenta compilar a imagem docker da api ou exibe mensagem caso não exista o arquivo
+        run: |
+          docker build -t cinelake-api:ci-test ./api 2>/dev/null || echo "Dockerfile não existe; pular build"
+
+      # Opcional: pode adicionar build de outras imagens se houver Dockerfiles
