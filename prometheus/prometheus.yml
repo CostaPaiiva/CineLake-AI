@@ -1,0 +1,26 @@
+# Configurações globais do Prometheus
+global:
+  # Frequência de coleta de métricas nos alvos (targets)
+  scrape_interval: 15s
+  # Frequência de avaliação de regras de alarme/alertas
+  evaluation_interval: 15s
+
+# Definição das fontes de métricas (alvos de scrape)
+scrape_configs:
+  # Job responsável por coletar métricas do exportador da aplicação CineLake
+  - job_name: 'cinelake-exporter'
+    static_configs:
+      # Endereço do exportador de métricas (rodando no host através da porta 8000)
+      - targets: ['host.docker.internal:8000']
+
+  # Job de coleta das métricas do sistema operacional (Node Exporter)
+  - job_name: 'node-exporter'
+    static_configs:
+      # Endereço e porta do serviço node-exporter na rede Docker
+      - targets: ['node-exporter:9100']
+
+  # Job de coleta das métricas do banco de dados PostgreSQL (Postgres Exporter)
+  - job_name: 'postgres-exporter'
+    static_configs:
+      # Endereço e porta do serviço postgres-exporter na rede Docker
+      - targets: ['postgres-exporter:9187']

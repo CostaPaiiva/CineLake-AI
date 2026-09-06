@@ -134,6 +134,140 @@ services:
           cpus: "0.5"   # Limita a 0,5 núcleos de CPU
           memory: 512M  # Limita a 512 Megabytes de memória RAM
 
+  # Serviço do Node Exporter para coleta de métricas de hardware e do sistema operacional host
+  node-exporter:
+    # Imagem Docker oficial do Prometheus Node Exporter
+    image: prom/node-exporter:latest
+    # Nome do container quando estiver em execução
+    container_name: cinelake-node-exporter
+    # Reinicia o container automaticamente caso ele caia, a menos que seja parado manualmente
+    restart: unless-stopped
+    # Mapeamento dos diretórios do sistema host em modo somente leitura (ro) para leitura de métricas
+    volumes:
+      # Mapeia o sistema de arquivos de processos /proc do host
+      - /proc:/host/proc:ro
+      # Mapeia o sistema de arquivos do kernel /sys do host
+      - /sys:/host/sys:ro
+      # Mapeia o sistema de arquivos raiz / do host
+      - /:/rootfs:ro
+    # Parâmetros de linha de comando informando os caminhos dos sistemas de arquivos mapeados
+    command:
+      # Informa o caminho do procfs mapeado no container
+      - '--path.procfs=/host/proc'
+      # Informa o caminho do sysfs mapeado no container
+      - '--path.sysfs=/host/sys'
+      # Informa o caminho do rootfs mapeado no container
+      - '--path.rootfs=/rootfs'
+    # Mapeamento de portas (libera a porta 9100 apenas para o localhost)
+    ports:
+      # Porta 9100 exposta localmente para métricas de infraestrutura
+      - "127.0.0.1:9100:9100"
+    # Rede de comunicação em que o container irá rodar
+    networks:
+      # Associa à rede cinelake-network
+      - cinelake-network
+
+  # Serviço do Postgres Exporter para coleta de métricas do banco de dados PostgreSQL
+  postgres-exporter:
+    # Imagem Docker oficial da comunidade Prometheus para o exportador do PostgreSQL
+    image: prometheuscommunity/postgres-exporter:latest
+    # Nome do container quando estiver em execução
+    container_name: cinelake-postgres-exporter
+    # Reinicia o container automaticamente caso ele caia, a menos que seja parado manualmente
+    restart: unless-stopped
+    # Variáveis de ambiente de conexão com o banco de dados
+    environment:
+      # String de conexão do PostgreSQL formatada com credenciais do ambiente e SSL desabilitado
+      DATA_SOURCE_NAME: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?sslmode=disable
+    # Mapeamento de portas (libera a porta 9187 apenas para o localhost)
+    ports:
+      # Porta 9187 exposta localmente para métricas do banco
+      - "127.0.0.1:9187:9187"
+    # Rede de comunicação em que o container irá rodar
+    networks:
+      # Associa à rede cinelake-network
+      - cinelake-network
+    # Depende da inicialização saudável do serviço PostgreSQL
+    depends_on:
+      # Nome do serviço dependente
+      postgres:
+        # Condição de dependência exigindo estado de saúde (service_healthy)
+        condition: service_healthy
+
+  # Serviço do Prometheus para armazenamento e consulta de séries temporais de métricas
+  prometheus:
+    # Imagem Docker oficial mais recente do Prometheus
+    image: prom/prometheus:latest
+    # Nome do container quando estiver em execução
+    container_name: cinelake-prometheus
+    # Reinicia o container automaticamente caso ele caia, a menos que seja parado manualmente
+    restart: unless-stopped
+    # Mapeamento dos arquivos de configuração e volume de persistência de dados do Prometheus
+    volumes:
+      # Mapeia o arquivo de configuração local do Prometheus para o diretório interno
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      # Mapeia o volume persistente nomeado para armazenar as métricas em disco
+      - prometheus_data:/prometheus
+    # Comando de inicialização configurando o arquivo de parâmetros e diretório TSDB
+    command:
+      # Parâmetro para localização do arquivo de configuração yaml
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      # Parâmetro para o diretório de dados das séries temporais
+      - '--storage.tsdb.path=/prometheus'
+    # Mapeamento de portas (expõe a porta 9090 apenas para o localhost)
+    ports:
+      # Porta 9090 exposta localmente para a interface web e API do Prometheus
+      - "127.0.0.1:9090:9090"
+    # Rede de comunicação interna dos containers
+    networks:
+      # Associa à rede cinelake-network
+      - cinelake-network
+    # Dependências de inicialização para que o Prometheus inicie após os exportadores
+    depends_on:
+      # Depende do serviço node-exporter
+      node-exporter:
+        # Condição exigindo que o serviço node-exporter esteja iniciado
+        condition: service_started
+      # Depende do serviço postgres-exporter
+      postgres-exporter:
+        # Condição exigindo que o serviço postgres-exporter esteja iniciado
+        condition: service_started
+
+  # Serviço do Grafana para visualização, dashboards e monitoramento
+  grafana:
+    # Imagem Docker oficial mais recente do Grafana
+    image: grafana/grafana:latest
+    # Nome do container quando estiver em execução
+    container_name: cinelake-grafana
+    # Reinicia o container automaticamente caso ele caia, a menos que seja parado manualmente
+    restart: unless-stopped
+    # Configurações de ambiente para credenciais administrativas e acesso
+    environment:
+      # Senha do administrador obtida da variável de ambiente com valor fallback 'admin'
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+      # Desativa a permissão de auto-cadastro para novos usuários no Grafana
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    # Mapeamento de portas (expõe a porta 3000 apenas para o localhost)
+    ports:
+      # Porta 3000 exposta localmente para a interface web do Grafana
+      - "127.0.0.1:3000:3000"
+    # Mapeamento de volumes para dados persistentes do Grafana e provisionamento
+    volumes:
+      # Volume persistente para salvar dashboards, usuários e configurações
+      - grafana_data:/var/lib/grafana
+      # Mapeamento da pasta local de provisionamento automático do Grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
+    # Rede de comunicação interna dos containers
+    networks:
+      # Associa à rede cinelake-network
+      - cinelake-network
+    # Depende da inicialização prévia do serviço Prometheus
+    depends_on:
+      # Nome do serviço dependente
+      prometheus:
+        # Condição exigindo que o serviço prometheus esteja iniciado
+        condition: service_started
+
   # Serviço do Apache ZooKeeper para coordenação de cluster do Kafka
   zookeeper:
     # Imagem oficial da Confluent para o ZooKeeper
@@ -193,76 +327,30 @@ services:
       timeout: 10s
       retries: 5
 
-  # Serviço do Prometheus para coleta de métricas
-  prometheus:
-    # Imagem oficial mais recente do Prometheus
-    image: prom/prometheus:latest
-    # Nome do container quando estiver em execução
-    container_name: cinelake-prometheus
-    # Reinicia o container automaticamente caso ele caia, a menos que seja parado manualmente
-    restart: unless-stopped
-    # Mapeamento dos arquivos de configuração e volume de persistência de métricas
-    volumes:
-      - ./infrastructure/prometheus.yml:/etc/prometheus/prometheus.yml
-      - prometheus_data:/prometheus
-    # Exposição da porta 9090 apenas para o localhost
-    ports:
-      - "127.0.0.1:9090:9090"
-    # Permite resolver host.docker.internal para o IP do host (VPS) no Linux
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    # Rede de comunicação interna dos containers
-    networks:
-      - cinelake-network
-    # Verificação de integridade (Healthcheck) da API do Prometheus
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9090/-/healthy"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-
-  # Serviço do Grafana para visualização de dashboards e métricas
-  grafana:
-    # Imagem oficial mais recente do Grafana
-    image: grafana/grafana:latest
-    # Nome do container quando estiver em execução
-    container_name: cinelake-grafana
-    # Reinicia o container automaticamente caso ele caia, a menos que seja parado manualmente
-    restart: unless-stopped
-    # Configuração de credenciais do usuário admin via variável de ambiente
-    environment:
-      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
-    # Mapeamento do provisionamento automático de fontes de dados/dashboards e volume persistente
-    volumes:
-      - ./infrastructure/grafana_datasources.yml:/etc/grafana/provisioning/datasources/datasources.yml
-      - ./infrastructure/grafana_dashboards.yml:/etc/grafana/provisioning/dashboards/dashboards.yml
-      - grafana_data:/var/lib/grafana
-    # Exposição da porta 3000 apenas para o localhost
-    ports:
-      - "127.0.0.1:3000:3000"
-    # Rede de comunicação interna dos containers
-    networks:
-      - cinelake-network
-    # Verificação de integridade (Healthcheck) da API do Grafana
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-
 # Definição dos volumes persistentes nomeados
 volumes:
+  # Volume para persistência dos dados do PostgreSQL
   pgdata:
-    name: cinelake_pgdata       # Nome do volume no Docker para o banco de dados
+    # Nome do volume gerenciado pelo Docker para o banco de dados
+    name: cinelake_pgdata
+  # Volume para persistência dos arquivos e artefatos do MinIO
   minio_data:
-    name: cinelake_minio_data   # Nome do volume no Docker para o armazenamento de arquivos do MinIO
+    # Nome do volume gerenciado pelo Docker para o armazenamento de arquivos MinIO
+    name: cinelake_minio_data
+  # Volume para persistência do banco de séries temporais do Prometheus
   prometheus_data:
-    name: cinelake_prometheus_data # Nome do volume no Docker para a base de dados do Prometheus
+    # Nome do volume gerenciado pelo Docker para o banco de dados do Prometheus
+    name: cinelake_prometheus_data
+  # Volume para persistência dos dados, dashboards e sessões do Grafana
   grafana_data:
-    name: cinelake_grafana_data    # Nome do volume no Docker para as configurações do Grafana
+    # Nome do volume gerenciado pelo Docker para as configurações do Grafana
+    name: cinelake_grafana_data
 
 # Definição de redes personalizadas
 networks:
+  # Rede interna dos containers da aplicação CineLake
   cinelake-network:
-    name: cinelake-network      # Nome da rede docker
-    driver: bridge              # Driver de rede do tipo bridge (padrão para comunicação em uma única máquina)
+    # Nome da rede criada no Docker
+    name: cinelake-network
+    # Driver de rede do tipo bridge para comunicação entre containers na mesma máquina
+    driver: bridge
