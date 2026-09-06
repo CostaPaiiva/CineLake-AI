@@ -23,6 +23,16 @@ SELECT -- Inicia a seleção dos indicadores executivos principais
     (SELECT COUNT(DISTINCT user_id) FROM event_log WHERE ingestion_timestamp > NOW() - INTERVAL '7 days') AS usuarios_ativos_7d; -- Conta usuários únicos com interação nos últimos 7 dias
 
 -- ---------------------------------------------------------------------
+-- Tabela Pré-requisito: model_metrics (garante a existência da tabela)
+-- ---------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS model_metrics ( -- Cria a tabela de métricas caso ela ainda não exista
+    model_name VARCHAR(100) PRIMARY KEY, -- Nome do modelo de recomendação como chave primária
+    precision_medio FLOAT, -- Valor da precisão média obtida para o modelo
+    recall_medio FLOAT, -- Valor do recall médio obtido para o modelo
+    hit_rate FLOAT -- Valor do Hit Rate obtido para o modelo
+); -- Conclui a criação preventiva da tabela model_metrics
+
+-- ---------------------------------------------------------------------
 -- View 2: Recommendation Analytics (Métricas e Performance dos Modelos)
 -- ---------------------------------------------------------------------
 CREATE OR REPLACE VIEW mart_powerbi_recommendation_analytics AS -- Cria ou substitui a view de análise de desempenho das recomendações
