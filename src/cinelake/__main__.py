@@ -488,6 +488,7 @@ def _cmd_serve_main(args: argparse.Namespace) -> None:
     """Inicia o servidor FastAPI principal."""
     # Importação tardia do Uvicorn para servir a aplicação ASGI
     import uvicorn
+
     # Importação tardia da aplicação FastAPI principal com suporte a cache Redis
     from cinelake.api.main import app
 

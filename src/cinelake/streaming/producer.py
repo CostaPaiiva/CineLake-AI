@@ -3,17 +3,22 @@
 
 # Importa a biblioteca json nativa para serialização de eventos no formato JSON
 import json
+
 # Importa a biblioteca de logging para diagnóstico e log de operações
 import logging
+
 # Importa o módulo time para gerenciamento de intervalos entre envios de mensagens
 import time
+
 # Importa a biblioteca uuid para geração de identificadores únicos universais de eventos
 import uuid
+
 # Importa datetime e timezone para timestamp padronizado com fuso horário UTC
 from datetime import datetime, timezone
 
 # Importa o produtor oficial da biblioteca kafka-python
 from kafka import KafkaProducer
+
 # Importa o tratamento de erros do cliente Kafka
 from kafka.errors import KafkaError
 
@@ -94,7 +99,7 @@ def produzir_eventos(quantidade: int = 10, intervalo_segundos: float = 0.0) -> N
     # Inicializa o produtor Kafka
     produtor = criar_produtor()
     # Executa o loop de produção para a quantidade de mensagens especificada
-    for i in range(quantidade):
+    for _i in range(quantidade):
         # Gera o dicionário de evento aleatório
         evento = gerar_evento_aleatorio()
         # Define o ID do usuário como chave para distribuição equilibrada nas partições do tópico

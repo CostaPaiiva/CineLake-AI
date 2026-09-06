@@ -19,6 +19,7 @@ from sqlalchemy import text
 
 # Importa a função get_engine da camada de acesso ao banco de dados do CineLake
 from cinelake.db import get_engine
+
 # Importa a função para log de parâmetros e métricas no MLflow
 from cinelake.mlops.tracking import log_parametros_e_metricas
 

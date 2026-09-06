@@ -3,20 +3,23 @@
 
 # Importa a biblioteca json nativa para desserialização e manipulação do formato JSON
 import json
+
 # Importa a biblioteca de logging para registros de diagnostico da aplicação
 import logging
+
 # Importa datetime e timezone para formatação e manipulação de timestamps
 from datetime import datetime, timezone
 
 # Importa as classes KafkaConsumer e KafkaProducer da biblioteca oficial kafka-python
 from kafka import KafkaConsumer, KafkaProducer
+
 # Importa as exceções nativas do cliente Kafka
-from kafka.errors import KafkaError
 # Importa o construtor text do SQLAlchemy para escrita de instruções SQL puras
 from sqlalchemy import text
 
 # Importa as configurações globais centralizadas da aplicação CineLake
 from cinelake.config import settings
+
 # Importa a função get_engine para obter conexão com o banco de dados PostgreSQL
 from cinelake.db import get_engine
 
@@ -44,11 +47,8 @@ def validar_evento(evento: dict) -> bool:
     # Verifica se o movie_id está presente e é do tipo numérico inteiro (int)
     if "movie_id" not in evento or not isinstance(evento["movie_id"], int):
         return False
-    # Verifica se a propriedade com a data/hora original do evento está presente
-    if "event_timestamp" not in evento:
-        return False
-    # Retorna True indicando que a validação do schema passou com sucesso
-    return True
+    # Retorna True se event_timestamp estiver presente no evento
+    return "event_timestamp" in evento
 
 
 # Função responsável por salvar os eventos válidos no banco de dados PostgreSQL

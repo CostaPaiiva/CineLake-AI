@@ -15,11 +15,13 @@ from sqlalchemy import text
 
 # Importa a função get_engine da camada de acesso ao banco de dados do CineLake
 from cinelake.db import get_engine
+
+# Importa a função para log de parâmetros e métricas no MLflow
+from cinelake.mlops.tracking import log_parametros_e_metricas
+
 # Importa os nomes oficiais dos modelos base para consulta na tabela de recomendações
 from cinelake.recommender.collaborative import MODEL_NAME as CF_MODEL
 from cinelake.recommender.content_based import MODEL_NAME as CB_MODEL
-# Importa a função para log de parâmetros e métricas no MLflow
-from cinelake.mlops.tracking import log_parametros_e_metricas
 
 # Inicializa o logger específico para este módulo usando __name__
 logger = logging.getLogger(__name__)

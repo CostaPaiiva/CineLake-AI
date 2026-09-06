@@ -14,6 +14,7 @@ from sqlalchemy import text
 
 # Importa a função get_engine do módulo cinelake.db para obter conexão com o banco de dados
 from cinelake.db import get_engine
+
 # Importa a função para log de parâmetros e métricas no MLflow
 from cinelake.mlops.tracking import log_parametros_e_metricas
 

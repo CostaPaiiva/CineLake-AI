@@ -3,7 +3,9 @@
 # =====================================================================
 
 import logging  # Módulo nativo para log de mensagens e diagnósticos
+
 import pandas as pd  # Biblioteca para manipulação de dados em formato DataFrame
+
 from cinelake.db import get_engine  # Função de conexão com o banco de dados PostgreSQL
 from cinelake.recommender.evaluate_models import avaliar_modelos  # Função unificada de avaliação
 

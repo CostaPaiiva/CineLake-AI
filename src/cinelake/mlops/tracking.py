@@ -3,13 +3,16 @@
 
 # Importação da biblioteca padrão de manipulação de logs do Python
 import logging
+
 # Importação do módulo os da biblioteca padrão para manipulação de variáveis de ambiente
 import os
+
 # Importação da classe Path da biblioteca padrão pathlib para tratamento de caminhos de arquivos e diretórios
 from pathlib import Path
 
 # Importação da biblioteca principal do MLflow para rastreamento de experimentos e modelos
 import mlflow
+
 # Importação do cliente MlflowClient para interação direta com a API do servidor de experimentos do MLflow
 from mlflow.tracking import MlflowClient
 

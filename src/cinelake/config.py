@@ -3,8 +3,10 @@
 
 # Importação do módulo os da biblioteca padrão para leitura de variáveis de ambiente do sistema
 import os
+
 # Importação do decorador dataclass para criação de classes de dados estruturadas
 from dataclasses import dataclass
+
 # Importação da classe Path do módulo pathlib para manipulação e resolução de caminhos de arquivos
 from pathlib import Path
 

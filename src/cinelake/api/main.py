@@ -3,22 +3,28 @@
 
 # Importa a biblioteca json nativa para serialização e desserialização de objetos no cache
 import json
+
 # Importa a biblioteca de logging para registros de diagnostico da aplicação
 import logging
+
 # Importa o tipo Any do módulo typing para anotações de tipo genéricas
 from typing import Any
 
 # Importa a biblioteca redis para conexão com o banco de dados em memória
 import redis
+
 # Importa os módulos principais do framework FastAPI para construção de endpoints HTTP REST
 from fastapi import FastAPI, HTTPException, Query
+
 # Importa o construtor BaseModel do Pydantic para validação do schema dos dados recebidos
 from pydantic import BaseModel
+
 # Importa o construtor text do SQLAlchemy para execução segura de SQL nativo
 from sqlalchemy import text
 
 # Importa o objeto de configurações centralizadas da aplicação CineLake
 from cinelake.config import settings
+
 # Importa a função get_engine para obter conexão com o banco de dados PostgreSQL
 from cinelake.db import get_engine
 
@@ -227,7 +233,7 @@ def filmes_similares(movie_id: int, top_n: int = Query(10, ge=1, le=50)):
     # Obtém a Engine do banco
     engine = get_engine()
     # Abre conexão com o PostgreSQL
-    with engine.connect() as conn:
+    with engine.connect():
         # Retorna estrutura de resposta
         return {"movie_id": movie_id, "similares": []}
 
