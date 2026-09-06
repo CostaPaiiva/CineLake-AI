@@ -16,6 +16,9 @@ import redis
 # Importa os módulos principais do framework FastAPI para construção de endpoints HTTP REST
 from fastapi import FastAPI, HTTPException, Query
 
+# Importa o instrumentador automático do Prometheus para o framework FastAPI
+from prometheus_fastapi_instrumentator import Instrumentator
+
 # Importa o construtor BaseModel do Pydantic para validação do schema dos dados recebidos
 from pydantic import BaseModel
 
@@ -30,9 +33,6 @@ from cinelake.db import get_engine
 
 # Instancia o logger específico para o módulo da API
 logger = logging.getLogger(__name__)
-
-# Importa o instrumentador automático do Prometheus para o framework FastAPI
-from prometheus_fastapi_instrumentator import Instrumentator
 
 # Cria a aplicação principal FastAPI com título e versão da documentação Swagger
 app = FastAPI(title="CineLake AI - API Principal", version="1.0.0")
