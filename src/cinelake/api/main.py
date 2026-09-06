@@ -91,7 +91,8 @@ def _obter_filme_com_cache(movie_id: int) -> dict[str, Any]:
         # Registra no log o acerto de cache
         logger.info("Cache hit para filme %s", movie_id)
         # Converte a string JSON de volta para dicionário Python e retorna
-        return json.loads(cache)
+        dados_cache: dict[str, Any] = json.loads(cache)
+        return dados_cache
 
     # Caso a chave não exista no Redis (Cache Miss)
     logger.info("Cache miss para filme %s", movie_id)
@@ -106,7 +107,7 @@ def _obter_filme_com_cache(movie_id: int) -> dict[str, Any]:
 
 # Endpoint GET para verificação de saúde da aplicação e da conexão com o Redis
 @app.get("/health", summary="Saúde da API")
-def health():
+def health() -> dict[str, Any]:
     """Retorna status da API e Redis."""
     # Tenta enviar o comando PING ao Redis para checar conectividade
     try:
@@ -129,7 +130,7 @@ def health():
 def listar_filmes(
     page: int = Query(1, ge=1),
     limit: int = Query(20, ge=1, le=100),
-):
+) -> dict[str, Any]:
     """Lista filmes paginados."""
     # Calcula o deslocamento do banco de dados (OFFSET) a partir do número da página
     offset = (page - 1) * limit
@@ -163,7 +164,7 @@ def listar_filmes(
 
 # Endpoint GET para recuperar os detalhes de um filme específico aproveitando a camada de cache
 @app.get("/movies/{movie_id}", summary="Detalhes de um filme (com cache)")
-def detalhe_filme(movie_id: int):
+def detalhe_filme(movie_id: int) -> dict[str, Any]:
     """Retorna detalhes do filme usando cache."""
     # Executa a busca otimizada com cache Redis
     return _obter_filme_com_cache(movie_id)
@@ -171,7 +172,7 @@ def detalhe_filme(movie_id: int):
 
 # Endpoint GET para obter os filmes mais populares (Trending) do modelo baseline
 @app.get("/movies/trending", summary="Filmes em alta (populares)")
-def filmes_trending(top_n: int = Query(10, ge=1, le=50)):
+def filmes_trending(top_n: int = Query(10, ge=1, le=50)) -> dict[str, Any]:
     """Retorna filmes populares do baseline."""
     # Obtém o Engine de conexão com o banco
     engine = get_engine()
@@ -200,7 +201,7 @@ def recomendacoes_usuario(
     user_id: int,
     modelo: str = Query("hybrid", description="Modelo de recomendação"),
     top_n: int = Query(10, ge=1, le=100),
-):
+) -> dict[str, Any]:
     """Retorna recomendações para um usuário específico."""
     # Obtém o Engine de banco de dados
     engine = get_engine()
@@ -228,7 +229,7 @@ def recomendacoes_usuario(
 
 # Endpoint GET para consultar filmes similares a partir da tabela de similaridade de conteúdo
 @app.get("/movies/{movie_id}/similar", summary="Filmes similares (content-based)")
-def filmes_similares(movie_id: int, top_n: int = Query(10, ge=1, le=50)):
+def filmes_similares(movie_id: int, top_n: int = Query(10, ge=1, le=50)) -> dict[str, Any]:
     """Retorna filmes similares usando tabela de similaridade (se existir)."""
     # Obtém a Engine do banco
     engine = get_engine()
@@ -240,7 +241,7 @@ def filmes_similares(movie_id: int, top_n: int = Query(10, ge=1, le=50)):
 
 # Endpoint POST para registrar uma nova avaliação de usuário no banco de dados
 @app.post("/ratings", summary="Registrar avaliação")
-def registrar_rating(rating: RatingInput):
+def registrar_rating(rating: RatingInput) -> dict[str, Any]:
     """Registra uma avaliação de usuário (em produção, enviaria para Kafka)."""
     # Obtém a Engine do banco
     engine = get_engine()

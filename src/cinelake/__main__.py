@@ -467,13 +467,13 @@ def _cmd_generate_hybrid(args: argparse.Namespace) -> None:
 def _cmd_evaluate_all_models(args: argparse.Namespace) -> None:
     # Docstring do comando de avaliação de modelos
     """Avalia todos os modelos."""
-    # Importação tardia da função avaliar_todos_modelos
-    from cinelake.recommender.evaluate import avaliar_todos_modelos
+    # Importação tardia da função avaliar_modelos
+    from cinelake.recommender.evaluate_models import avaliar_modelos
 
     # Obtém o logger configurado para este módulo
     logger = logging.getLogger(__name__)
     # Executa a avaliação de todos os modelos salvos para o limite top_k
-    resultados = avaliar_todos_modelos(top_k=args.top_k)
+    resultados = avaliar_modelos(top_k=args.top_k)
     # Percorre e imprime os resultados obtidos para cada modelo
     for res in resultados:
         # Imprime o resultado individual do modelo

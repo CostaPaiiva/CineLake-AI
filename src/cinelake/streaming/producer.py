@@ -16,6 +16,9 @@ import uuid
 # Importa datetime e timezone para timestamp padronizado com fuso horário UTC
 from datetime import datetime, timezone
 
+# Importa Any para anotações de tipagem genérica
+from typing import Any
+
 # Importa o produtor oficial da biblioteca kafka-python
 from kafka import KafkaProducer
 
@@ -50,8 +53,12 @@ def criar_produtor() -> KafkaProducer:
     return produtor
 
 
+# Produtor Kafka global reutilizável
+_producer: KafkaProducer | None = None
+
+
 # Função para gerar um evento sintético/aleatório de interação de usuário com o catálogo de filmes
-def gerar_evento_aleatorio() -> dict:
+def gerar_evento_aleatorio() -> dict[str, Any]:
     """Gera um evento de interação de filme."""
     # Importa o módulo random nativo para escolha aleatória de eventos e valores
     import random

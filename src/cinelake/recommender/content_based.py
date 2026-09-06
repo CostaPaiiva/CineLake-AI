@@ -6,6 +6,7 @@ import logging
 
 # Importa datetime e timezone do módulo nativo datetime para datas UTC
 from datetime import datetime, timezone
+from typing import Any
 
 # Importa a biblioteca numpy para operações matriciais e numéricas
 import numpy as np
@@ -47,7 +48,7 @@ def _carregar_dados() -> pd.DataFrame:
 
 
 # Função interna privada para converter a coluna genres em uma matriz binária one-hot encoding
-def _criar_matriz_generos(df: pd.DataFrame) -> tuple[pd.DataFrame, np.ndarray]:
+def _criar_matriz_generos(df: pd.DataFrame) -> tuple[pd.DataFrame, Any]:
     # Docstring da função descrevendo a transformação dos gêneros em representação vetorial binária
     """Converte a coluna genres em one-hot encoding."""
     # Separa os gêneros delimitados pelo caractere '|' criando uma lista de gêneros por filme

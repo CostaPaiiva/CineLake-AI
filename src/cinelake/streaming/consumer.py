@@ -10,6 +10,9 @@ import logging
 # Importa datetime e timezone para formatação e manipulação de timestamps
 from datetime import datetime, timezone
 
+# Importa o tipo Any para anotações de tipagem genérica
+from typing import Any
+
 # Importa as classes KafkaConsumer e KafkaProducer da biblioteca oficial kafka-python
 from kafka import KafkaConsumer, KafkaProducer
 
@@ -33,7 +36,7 @@ TOPIC_DLQ = "movie-events-dlq"
 
 
 # Função de validação para checar os campos obrigatórios e tipos de dados do evento
-def validar_evento(evento: dict) -> bool:
+def validar_evento(evento: dict[str, Any]) -> bool:
     """Valida campos obrigatórios do evento."""
     # Verifica se o campo event_id está presente e não é uma string vazia
     if "event_id" not in evento or not evento["event_id"]:
@@ -52,7 +55,7 @@ def validar_evento(evento: dict) -> bool:
 
 
 # Função responsável por salvar os eventos válidos no banco de dados PostgreSQL
-def processar_evento(evento: dict) -> bool:
+def processar_evento(evento: dict[str, Any]) -> bool:
     """Insere evento válido na tabela event_log."""
     # Obtém o Engine de conexão com o banco de dados
     engine = get_engine()
@@ -93,7 +96,7 @@ def processar_evento(evento: dict) -> bool:
 
 
 # Função utilitária para redirecionar mensagens com falha ou inválidas para o tópico de DLQ
-def enviar_para_dlq(evento: dict, motivo: str) -> None:
+def enviar_para_dlq(evento: dict[str, Any], motivo: str) -> None:
     """Envia evento inválido para a DLQ."""
     # Instancia um produtor temporário do Kafka para o envio da mensagem de erro
     produtor = KafkaProducer(
