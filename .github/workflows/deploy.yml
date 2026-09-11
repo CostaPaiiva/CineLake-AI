@@ -34,8 +34,8 @@ jobs:
           context: .
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/cinelake-ai:latest
-            ghcr.io/${{ github.repository_owner }}/cinelake-ai:${{ steps.meta.outputs.tag }}
+            ghcr.io/costapaiiva/cinelake-ai:latest
+            ghcr.io/costapaiiva/cinelake-ai:${{ steps.meta.outputs.tag }}
 
   deploy:
     name: Deploy na VPS
@@ -49,7 +49,7 @@ jobs:
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
-            cd ~/cinelake-ai
+            cd ~/CineLake-AI
             bash scripts/deploy.sh
             if [ $? -ne 0 ]; then
               echo "Deploy falhou, executando rollback"

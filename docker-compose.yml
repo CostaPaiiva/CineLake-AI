@@ -2,7 +2,7 @@
 services:
   # Serviço principal da API FastAPI
   api:
-    image: ghcr.io/CostaPaiiva/cinelake-ai:latest
+    image: ghcr.io/costapaiiva/cinelake-ai:latest
     container_name: cinelake-api
     restart: unless-stopped
     environment:
