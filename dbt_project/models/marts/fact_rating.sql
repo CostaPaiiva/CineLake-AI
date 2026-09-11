@@ -15,6 +15,6 @@ select
     r.rating,                           -- Métrica/Fato: nota atribuída (0.5 a 5.0)
     r.rated_at,                         -- Timestamp exato da avaliação
     d.date_id                           -- Chave estrangeira para dim_date
-from stg_ratings AS r
+from stg_ratings as r
 -- Converte o timestamp para date e associa à dimensão de datas/calendário
-left join {{ ref('dim_date') }} AS d on d.date_id = r.rated_at::date
+left join {{ ref('dim_date') }} as d on d.date_id = r.rated_at::date
