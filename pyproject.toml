@@ -44,11 +44,12 @@ dependencies = [ # Lista de dependências diretas de produção necessárias par
 [project.optional-dependencies] # Dependências opcionais separadas por grupos (ex: desenvolvimento, testes)
 dev = [ # Grupo de dependências voltadas para ambiente de desenvolvimento e testes
     "pytest>=8.0", # Framework de testes automatizados para execução de testes unitários e de integração
-    "pytest-cov>=4.0", # Plugin do pytest para geração de relatórios de cobertura de código (coverage)
+    "pytest-cov>=5.0", # Plugin do pytest para geração de relatórios de cobertura de código (coverage)
     "ruff>=0.6", # Linter e formatador de código extremamente rápido escrito em Rust
     "mypy>=1.10", # Checador estático de tipos para garantir type safety no Python
     "pip-audit>=2.7", # Auditoria de segurança e vulnerabilidades em dependências Python
-    "sqlfluff>=3.0" # Linter e formatador de sintaxe SQL para modelos dbt
+    "sqlfluff>=3.0", # Linter e formatador de sintaxe SQL para modelos dbt
+    "sqlfluff-templater-dbt>=3.0", # Templater do dbt para o SQLFluff
 ] # Fim do grupo de dependências de desenvolvimento
 
 [project.scripts] # Definição de comandos CLI executáveis instalados junto com o pacote
