@@ -35,11 +35,80 @@ Requires-Dist: pytest>=8.0; extra == "dev"
 Requires-Dist: pytest-cov>=4.0; extra == "dev"
 Requires-Dist: ruff>=0.6; extra == "dev"
 Requires-Dist: mypy>=1.10; extra == "dev"
+Requires-Dist: pip-audit>=2.7; extra == "dev"
+Requires-Dist: sqlfluff>=3.0; extra == "dev"
 Dynamic: license-file
 
 <div align="center">
 
 # CineLake AI
+
+[![CI](https://github.com/CostaPaiiva/CineLake-AI/actions/workflows/ci.yml/badge.svg)](https://github.com/CostaPaiiva/CineLake-AI/actions/workflows/ci.yml)
+[![Deploy](https://github.com/CostaPaiiva/CineLake-AI/actions/workflows/deploy.yml/badge.svg)](https://github.com/CostaPaiiva/CineLake-AI/actions/workflows/deploy.yml)
+
+Plataforma de Engenharia de Dados, Recomendação e IA Agêntica de nível produção.
+
+## Status
+
+**FASE 24 — DEPLOY AUTOMATIZADO**
+
+## O que é o CineLake AI?
+
+O CineLake AI é uma plataforma completa de dados que utiliza dados reais de filmes para demonstrar:
+
+- Engenharia e arquitetura de dados
+- Processamento batch e streaming com Kafka
+- Data Lake e Data Warehouse
+- Modelagem dimensional
+- Qualidade, contratos e linhagem de dados
+- Orquestração e observabilidade
+- Machine Learning e sistemas de recomendação
+- MLOps com MLflow
+- APIs, incluindo API principal com cache Redis
+- RAG + MCP
+- CI/CD com GitHub Actions
+- Deploy automatizado via SSH
+
+## Ambiente de desenvolvimento
+
+A plataforma roda em uma única VPS Ubuntu. O PC local é usado para PowerShell/SSH, navegador e Power BI.
+
+## Serviços Docker
+
+| Serviço | Descrição | Porta (host) |
+| --- | --- | --- |
+| API | Aplicação principal | `127.0.0.1:8002` |
+| PostgreSQL | Banco principal com pgvector | `127.0.0.1:5432` |
+| MinIO | Armazenamento de objetos | `127.0.0.1:9000` |
+| MLflow | Tracking server | `127.0.0.1:5000` |
+| Redis | Cache em memória | `127.0.0.1:6379` |
+| Kafka | Streaming de eventos | `127.0.0.1:9092` |
+| ZooKeeper | Coordenação do Kafka | `127.0.0.1:2181` |
+| Prometheus | Monitoramento | `127.0.0.1:9090` |
+| Grafana | Dashboards | `127.0.0.1:3000` |
+| Airflow | Orquestração de pipelines (instalação externa) | `127.0.0.1:8080` |
+
+## Configuração inicial
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install -e ".[dev]"
+cp .env.example .env
+```
+
+## CI/CD
+
+O projeto possui CI configurado no GitHub Actions:
+
+- **Lint**: Ruff
+- **Type check**: Mypy
+- **Testes unitários**: Pytest
+- **dbt**: compile + run + test contra PostgreSQL temporário
+- **Docker**: validação do Compose
+
+Os workflows rodam em cada push para `main` e em pull requests.
 
 > Atualização: o projeto também conta com API principal FastAPI, cache Redis e tracking de experimentos dos modelos com MLflow. Consulte a seção [API principal](#api-principal-e-mlflow).
 
@@ -96,36 +165,37 @@ O ambiente-alvo é uma VPS Ubuntu. Os serviços de infraestrutura ficam isolados
 
 ```mermaid
 flowchart LR
-    ML[MovieLens CSV] --> ING[Ingestão Python]
-    TMDB[TMDb API] --> ING
-    ING --> PG[(PostgreSQL)]
-    ING --> RAW[JSON bruto]
-    ML --> BRONZE[Bronze · Parquet]
+    RAGAPI["API RAG + MCP"]
+    ML["MovieLens CSV"] --> ING["Ingestão Python"]
+    TMDB["TMDb API"] --> ING
+    ING --> PG[("PostgreSQL")]
+    ING --> RAW["JSON bruto"]
+    ML --> BRONZE["Bronze - Parquet"]
     RAW --> BRONZE
-    BRONZE --> MINIO[(MinIO / S3)]
-    PG --> DBT[dbt]
-    DBT --> MARTS[Staging e Marts]
-    PG --> GE[Great Expectations]
-    MOVIES[Filmes + gêneros] --> CB[Content-based]
-    PG --> CF[Filtragem colaborativa]
-    PG --> REC[Baseline de popularidade]
-    CB --> HY[Modelo híbrido]
+    BRONZE --> MINIO[("MinIO / S3")]
+    PG --> DBT["dbt"]
+    DBT --> MARTS["Staging e Marts"]
+    PG --> GE["Great Expectations"]
+    MOVIES["Filmes e gêneros"] --> CB["Content-based"]
+    PG --> CF["Filtragem colaborativa"]
+    PG --> REC["Baseline de popularidade"]
+    CB --> HY["Modelo híbrido"]
     CF --> HY
-    REC --> RECS[(Recomendações)]
+    REC --> RECS[("Recomendações")]
     CB --> RECS
     CF --> RECS
     HY --> RECS
     RECS --> RAGAPI
-    PG --> OBS[API de observabilidade]
-    OBS --> MCP[MCP Server]
-    DOCS[ADRs · dbt · contratos · banco] --> RAG[Coleta e indexação RAG]
-    RAG --> VDB[(PostgreSQL + pgvector)]
-    VDB --> RAGAPI[API RAG + MCP]
+    PG --> OBS["API de observabilidade"]
+    OBS --> MCP["MCP Server"]
+    DOCS["ADRs - dbt - contratos - banco"] --> RAG["Coleta e indexação RAG"]
+    RAG --> VDB[("PostgreSQL + pgvector")]
+    VDB --> RAGAPI
     MCP --> RAGAPI
-    RAGAPI --> RAGLOG[(Auditoria de consultas RAG)]
-    EVAL[Avaliação Recall · MRR · Hit Rate] --> VDB
-    EXP[Exporter Prometheus] --> PROM[Prometheus]
-    PROM --> GRAF[Grafana]
+    RAGAPI --> RAGLOG[("Auditoria de consultas RAG")]
+    EVAL["Avaliação Recall - MRR - Hit Rate"] --> VDB
+    EXP["Exporter Prometheus"] --> PROM["Prometheus"]
+    PROM --> GRAF["Grafana"]
 ```
 
 | Camada | Implementação atual |

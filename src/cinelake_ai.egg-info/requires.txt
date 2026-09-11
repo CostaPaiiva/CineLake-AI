@@ -28,3 +28,5 @@ pytest>=8.0
 pytest-cov>=4.0
 ruff>=0.6
 mypy>=1.10
+pip-audit>=2.7
+sqlfluff>=3.0

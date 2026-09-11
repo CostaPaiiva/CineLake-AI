@@ -1,0 +1,8 @@
+[sqlfluff]
+dialect = postgres
+templater = jinja
+runaway_limit = 10
+max_line_length = 100
+
+[sqlfluff:templater:jinja]
+apply_dbt_builtins = true
