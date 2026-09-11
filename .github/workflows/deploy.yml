@@ -1,29 +1,26 @@
-# Workflow de CD (Continuous Deployment) para Build da Imagem Docker e Deploy Automatizado na VPS
 name: Deploy
 
-# Gatilhos de disparo do pipeline
 on:
-  # Dispara automaticamente a cada push na branch principal (main)
   push:
     branches: [main]
-  # Permite o disparo manual através do botão "Run workflow" na aba Actions do GitHub
   workflow_dispatch:
 
-# Definição dos jobs do pipeline
 jobs:
-  # Job 1: Compila a imagem Docker da aplicação e publica no GitHub Container Registry (GHCR)
   build-and-push:
     name: Build e Push para GHCR
     runs-on: ubuntu-latest
-    # Permissões necessárias para leitura do repositório e escrita no pacote GHCR
     permissions:
       contents: read
       packages: write
+    outputs:
+      image_tag: ${{ steps.meta.outputs.tag }}
     steps:
-      # Passo 1: Clona o repositório no runner do GitHub Actions
       - uses: actions/checkout@v4
 
-      # Passo 2: Realiza a autenticação no repositório de contêineres do GitHub (GHCR)
+      - name: Definir tag da imagem
+        id: meta
+        run: echo "tag=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
       - name: Login no GHCR
         uses: docker/login-action@v3
         with:
@@ -31,23 +28,21 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # Passo 3: Compila a imagem Docker a partir do Dockerfile da raiz e envia a tag :latest para o GHCR
       - name: Build e push da imagem
         uses: docker/build-push-action@v6
         with:
           context: .
           push: true
-          tags: ghcr.io/${{ github.repository_owner }}/cinelake-ai:latest
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/cinelake-ai:latest
+            ghcr.io/${{ github.repository_owner }}/cinelake-ai:${{ steps.meta.outputs.tag }}
 
-  # Job 2: Conecta na VPS via SSH e executa o script de deploy automatizado após o sucesso do build
   deploy:
     name: Deploy na VPS
     runs-on: ubuntu-latest
-    # Exige a conclusão bem-sucedida do job build-and-push antes de iniciar
     needs: build-and-push
     steps:
-      # Passo único: Conecta via SSH com as credenciais salvas nos Secrets do repositório
-      - name: Executar deploy via SSH
+      - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.VPS_HOST }}
@@ -56,3 +51,8 @@ jobs:
           script: |
             cd ~/cinelake-ai
             bash scripts/deploy.sh
+            if [ $? -ne 0 ]; then
+              echo "Deploy falhou, executando rollback"
+              bash scripts/rollback.sh
+              exit 1
+            fi
