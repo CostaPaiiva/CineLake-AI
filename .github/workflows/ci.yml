@@ -1,72 +1,125 @@
-# Nome do fluxo de trabalho de Integração Contínua (CI)
 name: CI
 
-# Definição dos gatilhos de disparo do pipeline no GitHub Actions
 on:
-  # Dispara automaticamente a cada evento de push
   push:
-    # Apenas para a branch principal 'main'
-    branches: [ main ]
-  # Dispara automaticamente a cada abertura ou atualização de Pull Request
+    branches: [main]
   pull_request:
-    # Apenas com alvo para a branch principal 'main'
-    branches: [ main ]
+    branches: [main]
 
-# Definição dos trabalhos (jobs) a serem executados em paralelo ou sequência
 jobs:
-  # Identificador do job responsável por linting, testes e compilação/build
-  lint-test-build:
-    # Define o ambiente de execução em uma máquina virtual com a versão mais recente do Ubuntu
+  lint:
+    name: Lint (Ruff)
     runs-on: ubuntu-latest
-    # Lista ordenada de passos/etapas executados sequencialmente neste job
     steps:
-      # 1. Passo: Baixa e faz checkout do repositório no runner do GitHub Actions
-      - name: Checkout código
-        # Action oficial do GitHub para baixar o código-fonte na versão v4
-        uses: actions/checkout@v4
-
-      # 2. Passo: Configura a versão especificada da linguagem Python no ambiente
-      - name: Configurar Python
-        # Action oficial do GitHub para instalação do Python na versão v5
+      - uses: actions/checkout@v4
+      - name: Setup Python
         uses: actions/setup-python@v5
-        # Parâmetros de configuração da versão do Python
         with:
-          # Define a versão 3.10 como interpretador padrão para a execução dos passos
-          python-version: '3.10'
+          python-version: "3.11"
+      - name: Install Ruff
+        run: pip install ruff
+      - name: Run Ruff
+        run: ruff check .
 
-      # 3. Passo: Instala o gerenciador pip e as dependências do projeto com o grupo dev
-      - name: Instalar dependências
-        # Comandos bash executados em sequência para atualizar o pip e instalar o pacote localmente
+  typecheck:
+    name: Type Check (Mypy)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('pyproject.toml') }}
+      - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -e ".[dev]"
-
-      # 4. Passo: Executa o linter Ruff para verificação estática de estilo de código
-      - name: Executar Ruff
-        # Comando para rodar o linter Ruff em todo o repositório
-        run: ruff check .
-
-      # 5. Passo: Executa a verificação estática de tipos com o Mypy
-      - name: Executar Mypy
-        # Comando para rodar a análise de tipos no diretório src do projeto
+      - name: Run Mypy
         run: mypy src
 
-      # 6. Passo: Executa os testes unitários da aplicação ignorando os de integração
-      - name: Executar Pytest (unit only)
-        # Comando do pytest desconsiderando marcações 'integration' no modo detalhado (-v)
-        run: pytest -m "not integration" -v
-
-      # 7. Passo: Navega até a pasta do dbt e compila os modelos e SQLs
-      - name: Compilar dbt
-        # Executa a compilação do dbt apontando para o diretório de perfis local
+  tests:
+    name: Unit Tests (Pytest)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('pyproject.toml') }}
+      - name: Install dependencies
         run: |
-          cd dbt_project
-          dbt compile --profiles-dir .
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+      - name: Run tests (unit only)
+        run: pytest tests/unit -v
 
-      # 8. Passo: Executa o build da imagem Docker da API (se o Dockerfile existir)
-      - name: Build Docker image (api)
-        # Tenta compilar a imagem docker da api ou exibe mensagem caso não exista o arquivo
+  dbt:
+    name: dbt Compile & Test
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: cinelake
+          POSTGRES_PASSWORD: cinelake_password
+          POSTGRES_DB: cinelake
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U cinelake"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      POSTGRES_USER: cinelake
+      POSTGRES_PASSWORD: cinelake_password
+      POSTGRES_DB: cinelake
+      POSTGRES_HOST: 127.0.0.1
+      POSTGRES_PORT: 5432
+      DATABASE_URL: postgresql+psycopg://cinelake:cinelake_password@127.0.0.1:5432/cinelake
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('pyproject.toml') }}
+      - name: Install dependencies
         run: |
-          docker build -t cinelake-api:ci-test ./api 2>/dev/null || echo "Dockerfile não existe; pular build"
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+      - name: Install psql client
+        run: sudo apt-get install -y postgresql-client
+      - name: Apply migrations
+        run: alembic upgrade head
+      - name: dbt compile
+        working-directory: dbt_project
+        run: dbt compile --profiles-dir .
+      - name: dbt run (para criar tabelas para os testes)
+        working-directory: dbt_project
+        run: dbt run --profiles-dir .
+      - name: dbt test
+        working-directory: dbt_project
+        run: dbt test --profiles-dir .
 
-      # Opcional: pode adicionar build de outras imagens se houver Dockerfiles
+  docker-build:
+    name: Docker Build (dry run)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build Docker Compose (sem subir)
+        run: docker compose config

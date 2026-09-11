@@ -2,6 +2,20 @@
 
 # CineLake AI
 
+[![CI](https://github.com/CostaPaiiva/CineLake-AI/actions/workflows/ci.yml/badge.svg)](https://github.com/CostaPaiiva/CineLake-AI/actions/workflows/ci.yml)
+
+## CI/CD
+
+O projeto possui CI configurado no GitHub Actions:
+
+- **Lint**: Ruff
+- **Type check**: Mypy
+- **Testes unitários**: Pytest
+- **dbt**: compile + run + test contra PostgreSQL temporário
+- **Docker**: validação do Compose
+
+Os workflows rodam em cada push para `main` e em pull requests.
+
 > Atualização: o projeto também conta com API principal FastAPI, cache Redis e tracking de experimentos dos modelos com MLflow. Consulte a seção [API principal](#api-principal-e-mlflow).
 
 ## API principal e MLflow
