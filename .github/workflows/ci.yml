@@ -162,6 +162,12 @@ jobs:
   sqlfluff:
     name: SQLFluff
     runs-on: ubuntu-latest
+    env:
+      POSTGRES_USER: cinelake
+      POSTGRES_PASSWORD: cinelake_password
+      POSTGRES_DB: cinelake
+      POSTGRES_HOST: 127.0.0.1
+      POSTGRES_PORT: 5432
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -170,7 +176,9 @@ jobs:
       - run: |
           python -m pip install --upgrade pip
           pip install sqlfluff sqlfluff-templater-dbt dbt-core dbt-postgres
-      - run: sqlfluff lint dbt_project/models
+      - name: Lint SQL do dbt
+        working-directory: dbt_project
+        run: sqlfluff lint models
 
   security:
     name: Security (pip-audit)
@@ -194,7 +202,7 @@ jobs:
       - name: Build imagem
         run: docker build -t cinelake-ai:ci .
       - name: Trivy scan
-        uses: aquasecurity/trivy-action@0.24.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: cinelake-ai:ci
           format: table
