@@ -1,45 +1,66 @@
-"""Servidor MCP principal do CineLake AI para comunicação via entrada/saída padrão (stdio)."""
+"""Servidor MCP remoto via HTTP (FastAPI)."""
 
 import logging
+import time
+from typing import Any
 
-from mcp.server.fastmcp import FastMCP
+from fastapi import Depends, FastAPI, HTTPException
+from pydantic import BaseModel
 
-from cinelake.mcp_server.tools import (
-    health_tools,
-    pipeline_tools,
-    quality_tools,
-    schema_tools,
-)
+from cinelake.mcp_server import tools
+from cinelake.mcp_server.audit import registrar_chamada
+from cinelake.mcp_server.auth import verificar_token
+from cinelake.mcp_server.rate_limit import verificar_rate_limit
 
 logger = logging.getLogger(__name__)
 
-
-def criar_servidor() -> FastMCP:
-    """Cria e inicializa o servidor MCP integrando os conjuntos de ferramentas da plataforma.
-
-    Returns:
-        FastMCP: Instância do servidor MCP com saúde, pipelines, qualidade e esquemas.
-    """
-    app = FastMCP("cinelake-mcp")
-
-    # Registra todos os grupos de ferramentas de observabilidade e dados
-    health_tools.registrar_ferramentas(app)
-    pipeline_tools.registrar_ferramentas(app)
-    quality_tools.registrar_ferramentas(app)
-    schema_tools.registrar_ferramentas(app)
-
-    return app
+app = FastAPI(title="CineLake MCP Server (remoto)", version="1.0.0")
 
 
-async def executar_servidor() -> None:
-    """Executa o loop de eventos assíncrono do servidor MCP utilizando o transporte via stdio."""
-    app = criar_servidor()
-    await app.run_stdio_async()
+class ToolRequest(BaseModel):
+    argumentos: dict[str, Any] = {}
 
 
-# Ponto de entrada padrão para execução direta do script via Python
-if __name__ == "__main__":
-    import asyncio
+@app.get("/health")
+def health() -> dict[str, str]:
+    """Healthcheck do servidor MCP."""
+    return {"status": "ok"}
 
-    logging.basicConfig(level=logging.INFO)
-    asyncio.run(executar_servidor())
+
+@app.post("/tools/{tool_name}")
+def executar_tool(
+    tool_name: str,
+    body: ToolRequest,
+    token_name: str = Depends(verificar_token),
+) -> dict[str, Any]:
+    """Executa uma ferramenta MCP autenticada."""
+    verificar_rate_limit(token_name)
+    if not hasattr(tools, tool_name):
+        raise HTTPException(status_code=404, detail=f"Ferramenta {tool_name} não encontrada")
+
+    funcao = getattr(tools, tool_name)
+    inicio = time.time()
+    status = "success"
+    erro = None
+    try:
+        resultado = funcao(**body.argumentos)
+    except Exception as exc:
+        status = "error"
+        erro = str(exc)
+        logger.exception("Erro ao executar %s", tool_name)
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+    finally:
+        exec_ms = (time.time() - inicio) * 1000
+        try:
+            registrar_chamada(
+                tool_name=tool_name,
+                argumentos=body.argumentos,
+                token_name=token_name,
+                status=status,
+                execution_time_ms=exec_ms,
+                error_message=erro,
+            )
+        except Exception as log_exc:
+            logger.error("Falha ao auditar chamada MCP: %s", log_exc)
+
+    return {"tool": tool_name, "resultado": resultado}

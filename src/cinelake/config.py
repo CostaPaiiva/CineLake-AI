@@ -66,6 +66,10 @@ class Settings:
     redis_port: int
     # Lista de servidores de inicialização (bootstrap servers) do cluster Kafka
     kafka_bootstrap_servers: str
+    # Token de autenticação Bearer para o servidor MCP remoto
+    mcp_token: str
+    # URL base de acesso HTTP ao servidor MCP
+    mcp_base_url: str
 
     # Método de classe para instanciar as configurações lendo os valores das variáveis de ambiente
     @classmethod
@@ -112,6 +116,10 @@ class Settings:
         # Configurações do Kafka com valores padrão (fallback)
         kafka_bootstrap_servers = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "127.0.0.1:9092")
 
+        # Configurações do MCP Server remoto
+        mcp_token = os.getenv("MCP_TOKEN", "troque_este_token")
+        mcp_base_url = os.getenv("MCP_BASE_URL", "http://127.0.0.1:8010")
+
         # Retorna a instância da classe Settings populada com todas as configurações lidas
         return cls(
             project_name="CineLake AI",
@@ -136,6 +144,8 @@ class Settings:
             redis_host=redis_host,
             redis_port=redis_port,
             kafka_bootstrap_servers=kafka_bootstrap_servers,
+            mcp_token=mcp_token,
+            mcp_base_url=mcp_base_url,
         )
 
 

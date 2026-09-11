@@ -225,6 +225,12 @@ def main() -> None:
     # Vincula o subcomando à função que executa o consumo e validação de mensagens
     parser_cons.set_defaults(func=_cmd_consume_events)
 
+    # 22. Subcomando: serve-mcp (Sobe servidor MCP remoto)
+    parser_mcp = subparsers.add_parser("serve-mcp", help="Sobe servidor MCP remoto")
+    parser_mcp.add_argument("--host", type=str, default="127.0.0.1", help="Host")
+    parser_mcp.add_argument("--port", type=int, default=8010, help="Porta")
+    parser_mcp.set_defaults(func=_cmd_serve_mcp)
+
     # Processa os argumentos fornecidos pelo usuário no terminal
     args = parser.parse_args()
 
@@ -528,6 +534,17 @@ def _cmd_consume_events(args: argparse.Namespace) -> None:
     consumir_eventos(max_mensagens=args.max_mensagens)
     # Registra no log o encerramento do processo de consumo
     logger.info("Consumo encerrado")
+
+
+def _cmd_serve_mcp(args: argparse.Namespace) -> None:
+    """Inicia o servidor MCP remoto com FastAPI e Uvicorn."""
+    import uvicorn
+
+    from cinelake.mcp_server.server import app
+
+    logger = logging.getLogger(__name__)
+    logger.info("Iniciando MCP remoto em %s:%s", args.host, args.port)
+    uvicorn.run(app, host=args.host, port=args.port, log_level="info")
 
 
 # Ponto de entrada padrão para execução via módulo (ex: python -m cinelake)

@@ -36,6 +36,7 @@ dependencies = [ # Lista de dependências diretas de produção necessárias par
     "redis>=5.0", # Cliente em Python para interação com o banco de dados em memória e cache Redis
     "kafka-python>=2.0", # Cliente Python para produção e consumo de mensagens no Apache Kafka
     "prometheus-fastapi-instrumentator>=7.0", # Instrumentador automático do FastAPI para exportação de métricas Prometheus
+    "httpx>=0.27", # Cliente HTTP assíncrono/síncrono para requisições ao servidor MCP
 ] # Fim da lista de dependências de produção
 
 
