@@ -1,4 +1,4 @@
-﻿# ==============================================================================
+# ==============================================================================
 # profiles.yml - Perfil de Conexão com o Banco de Dados (PostgreSQL)
 # ==============================================================================
 cinelake:
@@ -6,7 +6,7 @@ cinelake:
   outputs:
     dev:
       type: postgres
-      host: 127.0.0.1
+      host: "{{ env_var('POSTGRES_HOST', '127.0.0.1') }}"
       port: 5432
       # Credenciais obtidas de forma segura através de variáveis de ambiente
       user: "{{ env_var('POSTGRES_USER') }}"
