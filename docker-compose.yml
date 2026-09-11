@@ -1,5 +1,31 @@
 # Definição dos serviços (containers) que serão executados
 services:
+  # Serviço principal da API FastAPI
+  api:
+    image: ghcr.io/CostaPaiiva/cinelake-ai:latest
+    container_name: cinelake-api
+    restart: unless-stopped
+    environment:
+      CINELAKE_ENV: production
+      CINELAKE_LOG_LEVEL: INFO
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+    ports:
+      - "127.0.0.1:8002:8002"
+    networks:
+      - cinelake-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
   # Serviço do banco de dados PostgreSQL
   postgres:
     # Imagem PostgreSQL 16 com extensão pgvector pré-instalada para busca vetorial
