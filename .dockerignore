@@ -12,5 +12,5 @@ docs/
 tests/
 powerbi/
 *.md
-!.README.md
+!README.md
 .env
