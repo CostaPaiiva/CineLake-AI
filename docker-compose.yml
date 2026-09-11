@@ -64,7 +64,7 @@ services:
   # Serviço do MinIO (Object Storage compatível com a API do AWS S3)
   minio:
     # Imagem oficial mais recente do MinIO
-    image: minio/minio:latest
+    image: quay.io/minio/minio:latest
     # Nome do container quando estiver em execução
     container_name: cinelake-minio
     # Reinicia o container automaticamente caso ele caia, a menos que seja parado manualmente
