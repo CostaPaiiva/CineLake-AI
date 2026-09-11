@@ -76,12 +76,17 @@ jobs:
           --health-timeout 5s
           --health-retries 5
       minio:
-        image: bitnami/minio:latest
+        image: minio/minio:latest
         env:
           MINIO_ROOT_USER: cinelake_minio
           MINIO_ROOT_PASSWORD: cinelake_minio_secret
         ports:
           - 9000:9000
+        options: >-
+          --health-cmd "curl -f http://localhost:9000/minio/health/live || exit 1"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
     env:
       POSTGRES_USER: cinelake
       POSTGRES_PASSWORD: cinelake_password
