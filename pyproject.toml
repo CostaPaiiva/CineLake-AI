@@ -1,5 +1,5 @@
 [build-system] # Configuração do sistema de build do projeto Python
-requires = ["setuptools>=68", "wheel"] # Pacotes necessários para a construção/build do pacote (setuptools e wheel)
+requires = ["setuptools>=83.0.0", "wheel"] # Pacotes necessários para a construção/build do pacote (setuptools e wheel)
 build-backend = "setuptools.build_meta" # Backend responsável pelo processo de compilação/empacotamento
 
 [project] # Metadados principais do projeto e suas configurações básicas
