@@ -6,8 +6,9 @@
 import logging
 from typing import Any
 
-import great_expectations as ge
 from great_expectations.core.batch import RuntimeBatchRequest
+
+import great_expectations as ge
 
 # Configuração do logger do módulo
 logger = logging.getLogger(__name__)
@@ -59,6 +60,7 @@ def validar_ratings() -> dict[str, Any]:
         contexto.add_or_update_checkpoint(**checkpoint_config)
     elif hasattr(contexto, "checkpoints") and hasattr(contexto.checkpoints, "add_or_update"):
         from great_expectations.checkpoint import SimpleCheckpoint
+
         cp = SimpleCheckpoint(name="ratings_checkpoint", data_context=contexto, **checkpoint_config)
         contexto.checkpoints.add_or_update(cp)
     else:

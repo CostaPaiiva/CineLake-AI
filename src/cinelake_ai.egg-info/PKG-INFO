@@ -5,6 +5,7 @@ Summary: Production-Grade Data Engineering, Recommendation & Agentic Data Platfo
 Author-email: Seu Nome <seu-email@example.com>
 Requires-Python: >=3.10
 Description-Content-Type: text/markdown
+License-File: LICENSE
 Requires-Dist: python-dotenv>=1.0.0
 Requires-Dist: sqlalchemy>=2.0
 Requires-Dist: psycopg[binary]>=3.1
@@ -14,22 +15,64 @@ Requires-Dist: pyarrow>=15.0
 Requires-Dist: pandas>=2.0
 Requires-Dist: dbt-core>=1.8
 Requires-Dist: dbt-postgres>=1.8
-Requires-Dist: great_expectations>=0.18
+Requires-Dist: great_expectations<1.0,>=0.18
 Requires-Dist: prometheus_client>=0.18
 Requires-Dist: python-json-logger>=2.0
 Requires-Dist: fastapi>=0.110
 Requires-Dist: uvicorn>=0.27
 Requires-Dist: mcp>=1.0
 Requires-Dist: sentence-transformers>=2.7
+Requires-Dist: scikit-learn>=1.4
+Requires-Dist: scikit-surprise>=1.1.3
+Requires-Dist: numpy>=1.26
+Requires-Dist: scipy>=1.12
+Requires-Dist: mlflow>=2.12
+Requires-Dist: redis>=5.0
+Requires-Dist: kafka-python>=2.0
+Requires-Dist: prometheus-fastapi-instrumentator>=7.0
 Provides-Extra: dev
 Requires-Dist: pytest>=8.0; extra == "dev"
 Requires-Dist: pytest-cov>=4.0; extra == "dev"
 Requires-Dist: ruff>=0.6; extra == "dev"
 Requires-Dist: mypy>=1.10; extra == "dev"
+Dynamic: license-file
 
 <div align="center">
 
 # CineLake AI
+
+> Atualização: o projeto também conta com API principal FastAPI, cache Redis e tracking de experimentos dos modelos com MLflow. Consulte a seção [API principal](#api-principal-e-mlflow).
+
+## API principal e MLflow
+
+A API principal é iniciada com:
+
+```bash
+python -m cinelake serve-main-api --host 127.0.0.1 --port 8002
+```
+
+Ela expõe `GET /health`, `GET /movies`, `GET /movies/{movie_id}`, `GET /movies/trending`, `GET /users/{user_id}/recommendations` e `POST /ratings`. A documentação Swagger fica em `http://127.0.0.1:8002/docs`.
+
+Detalhes de filmes usam Redis como cache, com TTL de cinco minutos. Configure `REDIS_HOST` e `REDIS_PORT` no `.env`; o serviço é iniciado pelo Docker Compose.
+
+O MLflow é iniciado pelo Compose em `http://127.0.0.1:5000`. Os recomendadores registram parâmetros, métricas e artefatos dos treinamentos e avaliações. PostgreSQL é usado como backend de tracking e MinIO como armazenamento de artefatos.
+
+## Streaming de eventos com Kafka
+
+O projeto agora possui um fluxo de eventos com Apache Kafka e ZooKeeper. O produtor gera eventos sintéticos de interação no tópico `movie-events`; o consumidor valida o schema, persiste eventos válidos em `event_log` e encaminha mensagens inválidas ou com falha de processamento para `movie-events-dlq`.
+
+```bash
+# Iniciar Kafka e ZooKeeper
+docker compose up -d zookeeper kafka
+
+# Produzir eventos sintéticos
+python -m cinelake produce-events --quantidade 10
+
+# Consumir, validar e persistir eventos
+python -m cinelake consume-events --max-mensagens 100
+```
+
+O consumidor utiliza commit manual de offsets, grupo `cinelake-consumer` e gravação idempotente por `event_id`. Configure o broker pela variável `KAFKA_BOOTSTRAP_SERVERS` (padrão: `127.0.0.1:9092`). A migração `0007_create_event_log.py` cria a tabela de auditoria dos eventos.
 
 ### Plataforma de engenharia de dados para o domínio cinematográfico
 
@@ -47,7 +90,7 @@ O **CineLake AI** é um projeto de portfólio que constrói uma plataforma de da
 
 O ambiente-alvo é uma VPS Ubuntu. Os serviços de infraestrutura ficam isolados em Docker e suas portas são vinculadas a `127.0.0.1`; o acesso remoto é feito por túnel SSH.
 
-> Estado atual: fundação de dados implementada — PostgreSQL, ingestões MovieLens/TMDb, camada Bronze no MinIO, dbt, Great Expectations, API de observabilidade, métricas Prometheus, servidor MCP somente leitura e preparação de corpus RAG.
+> Estado atual: fundação de dados implementada — PostgreSQL com pgvector, ingestões MovieLens/TMDb, camada Bronze no MinIO, dbt, Great Expectations, observabilidade, servidor MCP, RAG auditável e recomendação por popularidade, conteúdo, filtragem colaborativa e modelo híbrido.
 
 ## Arquitetura
 
@@ -63,10 +106,24 @@ flowchart LR
     PG --> DBT[dbt]
     DBT --> MARTS[Staging e Marts]
     PG --> GE[Great Expectations]
+    MOVIES[Filmes + gêneros] --> CB[Content-based]
+    PG --> CF[Filtragem colaborativa]
+    PG --> REC[Baseline de popularidade]
+    CB --> HY[Modelo híbrido]
+    CF --> HY
+    REC --> RECS[(Recomendações)]
+    CB --> RECS
+    CF --> RECS
+    HY --> RECS
+    RECS --> RAGAPI
     PG --> OBS[API de observabilidade]
     OBS --> MCP[MCP Server]
     DOCS[ADRs · dbt · contratos · banco] --> RAG[Coleta e indexação RAG]
-    RAG --> VDB[(pgvector · planejado)]
+    RAG --> VDB[(PostgreSQL + pgvector)]
+    VDB --> RAGAPI[API RAG + MCP]
+    MCP --> RAGAPI
+    RAGAPI --> RAGLOG[(Auditoria de consultas RAG)]
+    EVAL[Avaliação Recall · MRR · Hit Rate] --> VDB
     EXP[Exporter Prometheus] --> PROM[Prometheus]
     PROM --> GRAF[Grafana]
 ```
@@ -75,13 +132,14 @@ flowchart LR
 | --- | --- |
 | Fontes | MovieLens e TMDb |
 | Ingestão | CLI Python, auditoria em `ingestion_batch` e reexecução idempotente |
-| Persistência operacional | PostgreSQL 16 + Alembic |
+| Persistência operacional | PostgreSQL 16 com pgvector + Alembic |
 | Data Lake | MinIO compatível com S3, dados Bronze em Parquet |
 | Transformação | dbt: staging e marts com esquema dimensional |
 | Qualidade | Contrato de `ratings` e validação com Great Expectations |
+| Recomendação | Popularidade, conteúdo, colaborativa e híbrida; persistência, API e avaliação offline |
 | Observabilidade | API FastAPI, exporter Prometheus, Prometheus e Grafana |
-| IA agêntica | Servidor MCP via `stdio`, com ferramentas de consulta somente leitura |
-| RAG | Coleta e normalização de contexto; indexação com embeddings em evolução |
+| IA agêntica | Servidor MCP via `stdio` e API RAG+MCP, com ferramentas de consulta somente leitura |
+| RAG | Coleta, embeddings, busca vetorial, avaliação e contexto para LLM |
 
 ## Principais capacidades
 
@@ -94,10 +152,16 @@ flowchart LR
 - Endpoints de saúde e freshness; métricas de pipeline compatíveis com Prometheus.
 - Ferramentas MCP para saúde, execução de pipelines, qualidade, esquema e linhagem simplificada.
 - Coleta de contexto para RAG a partir de ADRs, runbooks, contratos, modelos dbt e metadados operacionais.
+- Indexação idempotente de documentos RAG no PostgreSQL/pgvector com embeddings de 384 dimensões.
+- Endpoint `POST /ask` que combina busca vetorial e ferramenta MCP adequada ao contexto da pergunta.
+- Auditoria de perguntas RAG, documentos recuperados, ferramentas acionadas, latência, erros e status HTTP.
+- Avaliação da recuperação com Recall@k, MRR e Hit Rate@k, com resultado detalhado em JSON.
+- Quatro estratégias de recomendação: popularidade, conteúdo por gêneros, colaborativa e híbrida.
+- Persistência dos rankings por usuário, endpoints de consulta e avaliação offline comparativa.
 
 ## Stack
 
-`Python` · `PostgreSQL` · `Docker Compose` · `MinIO` · `Apache Parquet` · `SQLAlchemy` · `Alembic` · `dbt` · `Great Expectations` · `FastAPI` · `Prometheus` · `Grafana` · `Sentence Transformers` · `Model Context Protocol`
+`Python` · `PostgreSQL + pgvector` · `Docker Compose` · `MinIO` · `Apache Parquet` · `SQLAlchemy` · `Alembic` · `dbt` · `Great Expectations` · `scikit-learn` · `scikit-surprise` · `FastAPI` · `Prometheus` · `Grafana` · `Sentence Transformers` · `Model Context Protocol`
 
 ## Pré-requisitos
 
@@ -177,6 +241,47 @@ dbt run
 dbt test
 ```
 
+### 7. Criar o índice de conhecimento RAG
+
+```bash
+cd ..
+
+# Coleta contexto do repositório e do banco em JSON normalizado
+python -m cinelake collect-rag-documents
+
+# Gera embeddings e faz upsert em rag_documents (pgvector)
+python -m cinelake index-rag-documents
+```
+
+Na primeira execução, o modelo `all-MiniLM-L6-v2` será baixado. As migrações aplicadas no passo 3 habilitam a extensão `vector` e criam as tabelas `rag_documents` e `rag_query_log`.
+
+### 8. Gerar e avaliar recomendações
+
+```bash
+# Exibe os filmes com maior score de popularidade ponderada
+python -m cinelake train-popularity-model
+
+# Persiste recomendações globais para os usuários existentes
+python -m cinelake generate-popular-recommendations --top-n 100
+
+# Recomendação personalizada por gêneros
+python -m cinelake train-content-based-model
+python -m cinelake generate-content-recommendations --top-n 100
+
+# Filtragem colaborativa item-item baseada nas avaliações
+python -m cinelake train-collaborative-model
+python -m cinelake generate-collaborative-recommendations --top-n 100
+
+# Combina content-based e colaborativa
+python -m cinelake generate-hybrid-recommendations \
+  --top-n 100 --peso-content 0.4 --peso-collab 0.6
+
+# Compara os modelos usando métricas offline
+python -m cinelake evaluate-all-models --top-k 10
+```
+
+A tabela `recommendations` é criada pelas migrações do passo 3. O modelo de popularidade é global; os modelos content-based, colaborativo e híbrido são personalizados por usuário.
+
 ## Comandos da CLI
 
 | Comando | Finalidade |
@@ -187,6 +292,18 @@ dbt test
 | `python -m cinelake ingest-datalake-bronze` | Converte dados brutos em Parquet e os envia ao MinIO |
 | `python -m cinelake serve-observability` | Inicia a API FastAPI de observabilidade |
 | `python -m cinelake run-metrics-exporter` | Inicia o endpoint Prometheus na porta 8000 |
+| `python -m cinelake collect-rag-documents` | Coleta e normaliza documentos de contexto para RAG |
+| `python -m cinelake index-rag-documents` | Gera embeddings e indexa documentos no pgvector |
+| `python -m cinelake serve-rag-mcp` | Inicia a API que combina RAG e MCP na porta 8001 |
+| `python -m cinelake evaluate-rag [--dataset CAMINHO] [--k N]` | Avalia a recuperação semântica do RAG |
+| `python -m cinelake train-popularity-model` | Calcula e mostra o ranking de popularidade ponderada |
+| `python -m cinelake generate-popular-recommendations [--top-n N]` | Gera e persiste recomendações populares |
+| `python -m cinelake train-content-based-model` | Calcula similaridade item-item a partir dos gêneros |
+| `python -m cinelake generate-content-recommendations [--top-n N]` | Gera recomendações personalizadas por conteúdo |
+| `python -m cinelake train-collaborative-model` | Calcula similaridade item-item a partir das avaliações |
+| `python -m cinelake generate-collaborative-recommendations [--top-n N]` | Gera recomendações colaborativas personalizadas |
+| `python -m cinelake generate-hybrid-recommendations [--peso-content X] [--peso-collab Y]` | Combina os rankings content-based e colaborativo |
+| `python -m cinelake evaluate-all-models [--top-k N]` | Compara os modelos de recomendação offline |
 
 ## Operação
 
@@ -254,11 +371,70 @@ O servidor MCP opera por `stdio` e expõe ferramentas somente leitura para que u
 python -m cinelake.mcp_server.server
 ```
 
-### Preparação do RAG
+### RAG + MCP API
 
-O módulo `cinelake.rag` prepara o conhecimento da plataforma para uma futura camada de recuperação. Ele coleta ADRs, runbooks, modelos e schemas dbt, contratos de dados, esquema do PostgreSQL e as últimas execuções de pipeline; os documentos normalizados são persistidos em JSON.
+O módulo `cinelake.rag` coleta ADRs, runbooks, modelos e schemas dbt, contratos de dados, esquema do PostgreSQL e o histórico de pipelines. Os documentos são normalizados em JSON, vetorizados pelo modelo `all-MiniLM-L6-v2` e indexados com upsert idempotente em `rag_documents`.
 
-A indexação gera embeddings com `all-MiniLM-L6-v2` e foi desenhada para fazer upsert em `rag_documents` usando pgvector. Esta etapa ainda não é uma interface operacional pronta: faltam a migração da tabela/extensão pgvector e um comando CLI para acioná-la. Por isso, ela não entra no fluxo de início rápido.
+Inicie a API RAG+MCP:
+
+```bash
+python -m cinelake serve-rag-mcp --host 127.0.0.1 --port 8001
+```
+
+Envie uma pergunta:
+
+```bash
+curl -X POST http://127.0.0.1:8001/ask \
+  -H "Content-Type: application/json" \
+  -d '{"texto":"Qual é o status da plataforma?", "top_k": 5}'
+```
+
+O endpoint recupera documentos semanticamente similares e seleciona, quando aplicável, uma ferramenta MCP local para obter contexto operacional atual. A resposta devolve o contexto estruturado; a geração final por um LLM ainda não é implementada.
+
+Cada requisição é registrada em `rag_query_log`, incluindo documentos recuperados, ferramenta MCP, latência, status e possível erro. Consulte as métricas agregadas e as dez últimas consultas:
+
+```bash
+curl http://127.0.0.1:8001/rag/metrics
+```
+
+O mesmo serviço expõe recomendações globais, personalizadas e rankings persistidos:
+
+```bash
+curl "http://127.0.0.1:8001/recommendations/popular?top_n=10"
+curl "http://127.0.0.1:8001/recommendations/user/1?modelo=hybrid&top_n=10"
+curl "http://127.0.0.1:8001/recommendations/model/content_based?user_id=1&top_n=10"
+```
+
+### Avaliação do RAG
+
+O comando de avaliação recebe um dataset JSON com a chave `perguntas`; cada item deve conter `id`, `texto` e `documentos_relevantes` (títulos esperados). Ele calcula Recall@k, MRR e Hit Rate@k, registra a execução em `ingestion_batch` e salva o detalhamento em `data/rag/evaluation/results.json`.
+
+```bash
+python -m cinelake evaluate-rag \
+  --dataset data/rag/evaluation/eval_dataset.json \
+  --k 5
+```
+
+### Sistema de recomendação
+
+O CineLake AI possui quatro estratégias:
+
+- **Popularidade:** ranking global com média ponderada.
+- **Content-based:** recomenda filmes semelhantes aos que o usuário avaliou positivamente, com base em gêneros.
+- **Colaborativa:** usa padrões de avaliações para recomendar itens similares aos já consumidos pelo usuário.
+- **Híbrida:** normaliza e combina os scores content-based e colaborativo; os pesos padrão são `0.4` e `0.6`, respectivamente.
+
+As recomendações são persistidas por modelo em `recommendations`. A avaliação usa divisão temporal dos ratings e mede Precision@k, Recall@k e Hit Rate. O comando `evaluate-all-models` compara as estratégias disponíveis.
+
+#### Baseline por popularidade
+
+O baseline usa a fórmula de popularidade ponderada do IMDb:
+
+```text
+(v / (v + m)) × R + (m / (v + m)) × C
+```
+
+Onde `v` é o número de avaliações do filme, `R` é sua nota média, `m` é o mínimo de votos configurado e `C` é a média global.
 
 ## Testes e qualidade de código
 
@@ -289,7 +465,9 @@ mypy src
 │   ├── data_quality/        # Contratos e Great Expectations
 │   ├── observability/       # API, health e métricas
 │   ├── mcp_server/          # Servidor e ferramentas MCP
-│   └── rag/                 # Coleta, normalização e indexação de contexto
+│   ├── rag/                 # Coleta, recuperação, avaliação e observabilidade RAG
+│   ├── recommender/          # Popularidade, conteúdo, colaborativa, híbrida e avaliação
+│   └── api/                 # API RAG + MCP
 └── tests/                   # Testes unitários e de integração
 ```
 
@@ -306,10 +484,15 @@ mypy src
 - Containerizar e supervisionar os processos da aplicação, incluindo o exporter Prometheus.
 - Evoluir a orquestração do Airflow para os pipelines de ingestão e transformação.
 - Adicionar CI, cobertura de testes e publicação de imagens.
-- Implementar as camadas Silver/Gold e um fluxo de recomendação/MLOps.
-- Concluir o RAG com pgvector, migração de schema, comando CLI e recuperação de contexto.
+- Adicionar experiment tracking, versionamento de modelos e retreinamento automatizado.
+- Integrar um provedor LLM para transformar o contexto RAG+MCP em respostas finais.
+- Ampliar o dataset de avaliação e adicionar métricas de relevância e segurança ao fluxo RAG.
 - Gerar linhagem automaticamente a partir dos artefatos do dbt.
 
 ## Licença
 
-Ainda não há uma licença declarada para o projeto. Antes de receber contribuições externas ou distribuir o código, adicione um arquivo `LICENSE` com a licença escolhida.
+Este projeto é distribuído sob a [Apache License 2.0](LICENSE).
+
+Copyright 2026 CineLake AI Contributors.
+
+O código do projeto e os dados/serviços de terceiros utilizados pela plataforma podem estar sujeitos a licenças e termos próprios. Consulte as condições do MovieLens, TMDb, modelos de embeddings e dependências antes de redistribuir esses componentes.

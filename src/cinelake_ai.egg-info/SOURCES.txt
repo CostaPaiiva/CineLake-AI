@@ -1,3 +1,4 @@
+LICENSE
 README.md
 pyproject.toml
 src/cinelake/__init__.py
@@ -6,7 +7,9 @@ src/cinelake/config.py
 src/cinelake/db.py
 src/cinelake/logging_config.py
 src/cinelake/api/__init__.py
+src/cinelake/api/main.py
 src/cinelake/api/rag_mcp.py
+src/cinelake/api/recommendations.py
 src/cinelake/data_quality/__init__.py
 src/cinelake/data_quality/setup.py
 src/cinelake/data_quality/validate.py
@@ -28,6 +31,8 @@ src/cinelake/mcp_server/tools/health_tools.py
 src/cinelake/mcp_server/tools/pipeline_tools.py
 src/cinelake/mcp_server/tools/quality_tools.py
 src/cinelake/mcp_server/tools/schema_tools.py
+src/cinelake/mlops/__init__.py
+src/cinelake/mlops/tracking.py
 src/cinelake/observability/__init__.py
 src/cinelake/observability/api.py
 src/cinelake/observability/health.py
@@ -35,10 +40,22 @@ src/cinelake/observability/logging_json.py
 src/cinelake/observability/metrics.py
 src/cinelake/rag/__init__.py
 src/cinelake/rag/collector.py
+src/cinelake/rag/evaluate.py
 src/cinelake/rag/indexer.py
 src/cinelake/rag/mcp_client.py
 src/cinelake/rag/normalizer.py
+src/cinelake/rag/observability.py
 src/cinelake/rag/retriever.py
+src/cinelake/recommender/__init__.py
+src/cinelake/recommender/collaborative.py
+src/cinelake/recommender/content_based.py
+src/cinelake/recommender/evaluate.py
+src/cinelake/recommender/evaluate_models.py
+src/cinelake/recommender/hybrid.py
+src/cinelake/recommender/popularity.py
+src/cinelake/streaming/__init__.py
+src/cinelake/streaming/consumer.py
+src/cinelake/streaming/producer.py
 src/cinelake_ai.egg-info/PKG-INFO
 src/cinelake_ai.egg-info/SOURCES.txt
 src/cinelake_ai.egg-info/dependency_links.txt
