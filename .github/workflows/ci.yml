@@ -1,125 +1,233 @@
+# Nome do fluxo de trabalho exibido na interface do GitHub Actions
 name: CI
 
+# Definição dos eventos que engatilham a execução do pipeline
 on:
+  # Executa o pipeline quando houver um push de código
   push:
+    # Restringe a execução apenas para commits feitos na branch main
     branches: [main]
+  # Executa o pipeline quando um Pull Request for aberto ou atualizado
   pull_request:
+    # Restringe a execução apenas para Pull Requests que tenham como alvo a branch main
     branches: [main]
 
+# Bloco principal que contém todos os trabalhos (jobs) do pipeline
 jobs:
+  # Job responsável por verificar a formatação e linting do código Python
   lint:
+    # Nome amigável do job exibido nos logs do GitHub Actions
     name: Lint (Ruff)
+    # Define a imagem do sistema operacional da máquina virtual (Linux Ubuntu)
     runs-on: ubuntu-latest
+    # Lista de passos ordenados que serão executados sequencialmente neste job
     steps:
+      # Passo 1: Clona/faz checkout do código-fonte do repositório para o servidor de CI
       - uses: actions/checkout@v4
+      # Passo 2: Configura o ambiente Python no servidor
       - name: Setup Python
+        # Action oficial para instalação do interpretador Python
         uses: actions/setup-python@v5
+        # Configurações passadas para a action de setup do Python
         with:
+          # Define a versão do Python a ser instalada no ambiente (3.11)
           python-version: "3.11"
+      # Passo 3: Instala o linter Ruff via pip
       - name: Install Ruff
+        # Comando para instalar o Ruff
         run: pip install ruff
+      # Passo 4: Executa a análise estática do código com o Ruff
       - name: Run Ruff
+        # Comando para verificar todo o repositório em busca de problemas de código/estilo
         run: ruff check .
 
+  # Job responsável pela verificação estática de tipos de dados no código Python
   typecheck:
+    # Nome amigável do job exibido nos logs do GitHub Actions
     name: Type Check (Mypy)
+    # Define a imagem do sistema operacional da máquina virtual (Linux Ubuntu)
     runs-on: ubuntu-latest
+    # Lista de passos ordenados deste job
     steps:
+      # Passo 1: Clona o repositório
       - uses: actions/checkout@v4
+      # Passo 2: Configura o interpretador Python 3.11
       - name: Setup Python
+        # Action oficial para setup do Python
         uses: actions/setup-python@v5
+        # Parâmetros adicionais para a action
         with:
+          # Especifica a versão 3.11 do Python
           python-version: "3.11"
+      # Passo 3: Habilita o cache das dependências do pip para agilizar builds futuros
       - name: Cache pip
+        # Action oficial para cache de arquivos
         uses: actions/cache@v4
+        # Configurações do cache
         with:
+          # Caminho do diretório de cache do pip no Linux
           path: ~/.cache/pip
+          # Chave única baseada no SO e no hash do pyproject.toml para invalidar o cache se as libs mudarem
           key: ${{ runner.os }}-pip-${{ hashFiles('pyproject.toml') }}
+      # Passo 4: Atualiza o pip e instala o projeto e suas dependências de desenvolvimento
       - name: Install dependencies
+        # Comandos executados em bloco bash
         run: |
           python -m pip install --upgrade pip
           pip install -e ".[dev]"
+      # Passo 5: Executa a checagem de tipos estática do Mypy no diretório do código-fonte
       - name: Run Mypy
+        # Comando que analisa os tipos das variáveis e funções dentro da pasta src
         run: mypy src
 
+  # Job responsável por rodar a suíte de testes unitários da aplicação
   tests:
+    # Nome amigável do job exibido nos logs
     name: Unit Tests (Pytest)
+    # Define a imagem do sistema operacional da máquina virtual
     runs-on: ubuntu-latest
+    # Lista de passos ordenados deste job
     steps:
+      # Passo 1: Clona o repositório
       - uses: actions/checkout@v4
+      # Passo 2: Configura o interpretador Python 3.11
       - name: Setup Python
+        # Action oficial para setup do Python
         uses: actions/setup-python@v5
+        # Parâmetros da action
         with:
+          # Versão do Python utilizada nos testes
           python-version: "3.11"
+      # Passo 3: Habilita o cache do pip para acelerar a instalação
       - name: Cache pip
+        # Action oficial de cache
         uses: actions/cache@v4
+        # Configurações do cache
         with:
+          # Pasta onde o pip salva o cache no Linux
           path: ~/.cache/pip
+          # Chave de validação do cache
           key: ${{ runner.os }}-pip-${{ hashFiles('pyproject.toml') }}
+      # Passo 4: Atualiza o pip e instala o projeto com pacotes de desenvolvimento
       - name: Install dependencies
+        # Comandos para atualização e instalação local
         run: |
           python -m pip install --upgrade pip
           pip install -e ".[dev]"
+      # Passo 5: Executa os testes unitários com Pytest no modo detalhado (-v)
       - name: Run tests (unit only)
+        # Comando que roda exclusivamente a pasta de testes unitários
         run: pytest tests/unit -v
 
+  # Job responsável por validar as migrações, compilações, construções e testes dos modelos dbt
   dbt:
+    # Nome amigável do job exibido nos logs
     name: dbt Compile & Test
+    # Define a imagem do sistema operacional da máquina virtual
     runs-on: ubuntu-latest
+    # Define serviços auxiliares em contêineres Docker necessários para este job
     services:
+      # Serviço de banco de dados PostgreSQL
       postgres:
+        # Imagem Docker oficial do PostgreSQL com extensão pgvector na versão 16
         image: pgvector/pgvector:pg16
+        # Variáveis de ambiente para inicialização do contêiner do banco
         env:
+          # Usuário padrão do banco de dados
           POSTGRES_USER: cinelake
+          # Senha do usuário do banco de dados
           POSTGRES_PASSWORD: cinelake_password
+          # Nome do banco de dados inicial a ser criado
           POSTGRES_DB: cinelake
+        # Mapeamento de portas do contêiner para a máquina hospedeira (host:container)
         ports:
           - 5432:5432
+        # Opções de checagem de saúde (healthcheck) para garantir que o Postgres está pronto antes dos testes
         options: >-
           --health-cmd "pg_isready -U cinelake"
           --health-interval 5s
           --health-timeout 5s
           --health-retries 5
+    # Variáveis de ambiente globais do job para conexão com o serviço PostgreSQL
     env:
+      # Nome do usuário para autenticação na aplicação
       POSTGRES_USER: cinelake
+      # Senha para autenticação na aplicação
       POSTGRES_PASSWORD: cinelake_password
+      # Nome do banco de dados a ser conectado
       POSTGRES_DB: cinelake
+      # Endereço IP do host local onde a porta 5432 do Postgres foi exposta
       POSTGRES_HOST: 127.0.0.1
+      # Porta TCP de conexão com o banco de dados
       POSTGRES_PORT: 5432
+      # URL completa de conexão SQLAlchemy/Psycopg para a aplicação e migrations
       DATABASE_URL: postgresql+psycopg://cinelake:cinelake_password@127.0.0.1:5432/cinelake
+    # Lista de passos ordenados deste job
     steps:
+      # Passo 1: Clona o repositório
       - uses: actions/checkout@v4
+      # Passo 2: Configura o interpretador Python 3.11
       - name: Setup Python
+        # Action oficial para setup do Python
         uses: actions/setup-python@v5
+        # Parâmetros da action
         with:
+          # Versão do Python
           python-version: "3.11"
+      # Passo 3: Habilita o cache do pip para download mais rápido de dependências
       - name: Cache pip
+        # Action oficial para gestão de cache
         uses: actions/cache@v4
+        # Configurações do cache
         with:
+          # Diretório onde as rodas/pacotes baixados pelo pip ficam salvos
           path: ~/.cache/pip
+          # Chave de verificação do cache
           key: ${{ runner.os }}-pip-${{ hashFiles('pyproject.toml') }}
+      # Passo 4: Atualiza o pip e instala o projeto
       - name: Install dependencies
+        # Instala dependências do projeto e ferramentas dev (como alembic, dbt-postgres, etc)
         run: |
           python -m pip install --upgrade pip
           pip install -e ".[dev]"
+      # Passo 5: Instala o cliente utilitário de linha de comando psql do PostgreSQL
       - name: Install psql client
+        # Comando de instalação via apt-get no Ubuntu
         run: sudo apt-get install -y postgresql-client
+      # Passo 6: Executa as migrações de banco de dados com Alembic até a última versão (head)
       - name: Apply migrations
+        # Cria as tabelas e esquemas estruturais no banco de dados temporário
         run: alembic upgrade head
+      # Passo 7: Compila os modelos SQL do dbt verificando a sintaxe e referências
       - name: dbt compile
+        # Diretório onde o projeto dbt está localizado
         working-directory: dbt_project
+        # Comando de compilação usando o diretório atual como perfil
         run: dbt compile --profiles-dir .
+      # Passo 8: Executa os modelos dbt para materializar as visões/tabelas no PostgreSQL
       - name: dbt run (para criar tabelas para os testes)
+        # Diretório de trabalho do dbt
         working-directory: dbt_project
+        # Comando para rodar as transformações SQL do dbt
         run: dbt run --profiles-dir .
+      # Passo 9: Executa os testes de integridade e regras de negócio definidos no dbt
       - name: dbt test
+        # Diretório de trabalho do dbt
         working-directory: dbt_project
+        # Comando para rodar os testes de integridade de dados (unique, not_null, etc)
         run: dbt test --profiles-dir .
 
+  # Job responsável por validar a sintaxe e estrutura dos arquivos do Docker Compose
   docker-build:
+    # Nome amigável do job exibido nos logs
     name: Docker Build (dry run)
+    # Define a imagem do sistema operacional da máquina virtual
     runs-on: ubuntu-latest
+    # Lista de passos ordenados deste job
     steps:
+      # Passo 1: Clona o repositório
       - uses: actions/checkout@v4
+      # Passo 2: Executa a validação de configuração do Docker Compose sem subir os contêineres
       - name: Build Docker Compose (sem subir)
+        # Comando que valida se a estrutura do arquivo docker-compose.yml é válida e sem erros de sintaxe
         run: docker compose config
