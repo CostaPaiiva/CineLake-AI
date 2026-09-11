@@ -1,0 +1,16 @@
+.git
+.github
+.venv
+__pycache__
+*.pyc
+.pytest_cache
+.mypy_cache
+.ruff_cache
+data/
+great_expectations/
+docs/
+tests/
+powerbi/
+*.md
+!.README.md
+.env
