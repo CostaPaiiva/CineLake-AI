@@ -6,6 +6,8 @@ import json
 import logging
 # Importa o módulo nativo time para realizar a medição precisa do tempo de resposta das operações
 import time
+# Importa Any do módulo typing para anotações de tipos genéricos
+from typing import Any
 
 # Importa o cliente da biblioteca redis para comunicação com o banco em memória Redis
 import redis
@@ -22,7 +24,7 @@ logger = logging.getLogger(__name__)
 
 
 # Função responsável por comparar o tempo de resposta do acesso a dados diretamente no PostgreSQL versus cache Redis
-def benchmark_redis_vs_no_redis(movie_id: int, repeticoes: int = 5) -> dict:
+def benchmark_redis_vs_no_redis(movie_id: int, repeticoes: int = 5) -> dict[str, Any]:
     """Compara latência de acesso a um filme com e sem Redis."""
     # Registra no log o início da execução do benchmark comparativo
     logger.info("Benchmark Redis x sem Redis")

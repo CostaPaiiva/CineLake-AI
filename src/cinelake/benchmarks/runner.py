@@ -6,6 +6,8 @@ import json
 import logging
 # Importa Path da biblioteca pathlib para manipulação orientada a objetos de caminhos e diretórios
 from pathlib import Path
+# Importa Any do módulo typing para anotações de tipos genéricos
+from typing import Any
 
 # Importa a função de execução do benchmark de CSV versus Parquet
 from cinelake.benchmarks.csv_vs_parquet import benchmark_csv_vs_parquet
@@ -21,7 +23,7 @@ logger = logging.getLogger(__name__)
 
 
 # Função principal orquestradora que executa todos os benchmarks do projeto
-def executar_todos_benchmarks() -> list[dict]:
+def executar_todos_benchmarks() -> list[dict[str, Any]]:
     """Executa todos os benchmarks configurados."""
     # Lista para armazenar todos os dicionários de resultados de cada benchmark executado
     resultados = []

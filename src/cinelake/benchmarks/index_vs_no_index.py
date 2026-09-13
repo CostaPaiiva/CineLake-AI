@@ -4,6 +4,8 @@
 import logging
 # Importa o módulo nativo time para medição de tempo de execução das consultas
 import time
+# Importa Any do módulo typing para anotações de tipos genéricos
+from typing import Any
 
 # Importa a função text do SQLAlchemy para construção de queries SQL textuais seguras
 from sqlalchemy import text
@@ -16,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 
 # Função responsável por comparar a performance de consultas SQL com e sem índice no PostgreSQL
-def benchmark_index_vs_no_index(tabela: str, coluna: str, valor: int, repeticoes: int = 5) -> dict:
+def benchmark_index_vs_no_index(tabela: str, coluna: str, valor: int, repeticoes: int = 5) -> dict[str, Any]:
     """
     Compara consulta com e sem índice.
 

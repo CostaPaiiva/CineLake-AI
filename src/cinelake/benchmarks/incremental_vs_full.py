@@ -6,6 +6,8 @@ import logging
 import time
 # Importa Path da biblioteca pathlib para manipulação orientada a objetos de caminhos de arquivos
 from pathlib import Path
+# Importa Any do módulo typing para anotações de tipos genéricos
+from typing import Any
 
 # Importa a biblioteca pandas para manipulação eficiente de dados tabulares
 import pandas as pd
@@ -20,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 
 # Função principal que realiza o benchmark comparativo entre carga full e carga incremental
-def benchmark_incremental_vs_full(caminho_csv: Path, repeticoes: int = 3) -> dict:
+def benchmark_incremental_vs_full(caminho_csv: Path, repeticoes: int = 3) -> dict[str, Any]:
     """Compara ingestão full (recarrega tudo) versus incremental (somente novos)."""
     # Registra no log o início da execução do benchmark
     logger.info("Benchmark ingestão full x incremental")

@@ -6,6 +6,8 @@ import logging
 import time
 # Importa Path da biblioteca pathlib para manipulação orientada a objetos de caminhos no sistema de arquivos
 from pathlib import Path
+# Importa Any do módulo typing para anotações de tipos genéricos
+from typing import Any
 
 # Importa a biblioteca pandas para manipulação e leitura de dados em estruturas DataFrame
 import pandas as pd
@@ -17,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 
 # Função principal que realiza o teste comparativo de desempenho entre CSV e Parquet
-def benchmark_csv_vs_parquet(caminho_csv: Path, caminho_parquet: Path, repeticoes: int = 3) -> dict:
+def benchmark_csv_vs_parquet(caminho_csv: Path, caminho_parquet: Path, repeticoes: int = 3) -> dict[str, Any]:
     """
     Compara tempo de leitura e tamanho em disco entre CSV e Parquet.
 

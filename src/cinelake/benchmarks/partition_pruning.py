@@ -6,6 +6,8 @@ import logging
 import time
 # Importa Path da biblioteca pathlib para manipulação orientada a objetos de caminhos de arquivos e diretórios
 from pathlib import Path
+# Importa Any do módulo typing para anotações de tipos genéricos
+from typing import Any
 
 # Importa o módulo dataset do PyArrow para leitura particionada e aplicação de filtros em datasets
 import pyarrow.dataset as ds
@@ -17,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 
 # Função principal responsável por executar o benchmark comparativo de partition pruning
-def benchmark_partition_pruning(diretorio_partitioned: Path, filtro: dict, repeticoes: int = 3) -> dict:
+def benchmark_partition_pruning(diretorio_partitioned: Path, filtro: dict[str, Any], repeticoes: int = 3) -> dict[str, Any]:
     """
     Compara leitura completa versus leitura com partition pruning.
 
