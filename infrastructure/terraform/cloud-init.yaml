@@ -1,0 +1,65 @@
+# Cabecalho padrao indicando que este arquivo e um script de configuracao do cloud-config (cloud-init)
+#cloud-config
+# Atualiza a lista de pacotes e repositorios do gerenciador apt no primeiro boot do servidor
+package_update: true
+# Executa a atualizacao dos pacotes instalados para as versoes mais recentes do sistema
+package_upgrade: true
+
+# Lista de pacotes essenciais e utilitarios a serem instalados automaticamente via apt
+packages:
+  # Permite que o apt utilize repositorios HTTPS com suporte a transporte seguro
+  - apt-transport-https
+  # Pacote contendo os certificados digitais autorizados para validacao de conexoes SSL/TLS
+  - ca-certificates
+  # Ferramenta de linha de comando para transferencia de dados via URLs (HTTP/HTTPS)
+  - curl
+  # Implementacao do OpenPGP para gerenciamento e verificacao de assinaturas e chaves de criptografia
+  - gnupg
+  # Utilitario para reportar informacoes da distribuicao Linux instalada (Ubuntu)
+  - lsb-release
+  # Sistema de controle de versao para clonar e gerenciar o codigo fonte do projeto
+  - git
+  # Ferramenta para automacao de compilacao e execucao de tarefas/comandos declarados em Makefiles
+  - htop
+
+# Secao de declaracao e criacao de usuarios adicionais do sistema operacional
+users:
+  # Define o nome do novo usuario Linux a ser criado no sistema
+  - name: cinelake
+    # Concede permissao total de sudo sem exigir senha para automacao de comandos administrativos
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    # Define o shell padrao do usuario como Bash (/bin/bash)
+    shell: /bin/bash
+    # Lista de chaves publicas SSH autorizadas para acesso remoto direto deste usuario
+    ssh_authorized_keys:
+      # Variavel que armazena a chave publica SSH (substituida via template ou manualmente)
+      - ${ssh_public_key}
+
+# Secao de comandos de terminal executados em ordem de sequencia apos a instalacao dos pacotes
+runcmd:
+  # Baixa e executa o script oficial de instalacao automatica do Docker Engine no servidor
+  - curl -fsSL https://get.docker.com | sh
+  # Adiciona o usuario 'cinelake' ao grupo 'docker' para permitir rodar containers sem necessidade de 'sudo'
+  - usermod -aG docker cinelake
+
+  # Verifica e registra nos logs de boot a versao instalada do Docker Engine
+  - docker --version
+  # Verifica e registra nos logs de boot a versao instalada do plugin Docker Compose
+  - docker compose version
+
+  # Cria o diretorio home para o usuario 'cinelake' garantindo que os diretorios pai existam
+  - mkdir -p /home/cinelake
+  # Ajusta a propriedade do diretorio home e subdiretórios para o usuario e grupo 'cinelake'
+  - chown -R cinelake:cinelake /home/cinelake
+
+  # Clonar o repositório (opcional, ajuste para seu repo)
+  # - sudo -u cinelake git clone https://github.com/<SEU_USUARIO>/cinelake-ai.git /home/cinelake/cinelake-ai
+
+  # Adiciona regra no firewall nativo UFW permitindo conexoes de entrada na porta 22 (SSH)
+  - ufw allow 22/tcp
+  # Adiciona regra no firewall nativo UFW permitindo conexoes de entrada na porta 80 (HTTP)
+  - ufw allow 80/tcp
+  # Adiciona regra no firewall nativo UFW permitindo conexoes de entrada na porta 443 (HTTPS)
+  - ufw allow 443/tcp
+  # Ativa o firewall UFW imediatamente sem solicitar confirmacao interativa no terminal
+  - ufw --force enable
