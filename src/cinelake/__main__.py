@@ -276,6 +276,18 @@ def main() -> None:
     # Vincula o subcomando à função correspondente
     parser_agent.set_defaults(func=_cmd_evaluate_agent)
 
+    # 25. Subcomando: chaos-lab (Executa cenários de injeção de falhas e resiliência)
+    parser_chaos = subparsers.add_parser("chaos-lab", help="Executa cenários de chaos lab")
+    # Adiciona argumento --cenario com opção padrão 'all'
+    parser_chaos.add_argument(
+        "--cenario",
+        type=str,
+        default="all",
+        help="Nome do cenário (postgres_down, minio_down, kafka_down, mcp_down, pipeline_failure, dlq_event, high_latency) ou 'all'",
+    )
+    # Vincula o subcomando à função que executa os experimentos de caos
+    parser_chaos.set_defaults(func=_cmd_chaos_lab)
+
     # Processa os argumentos fornecidos pelo usuário no terminal
     args = parser.parse_args()
 
@@ -623,6 +635,29 @@ def _cmd_evaluate_agent(args: argparse.Namespace) -> None:
     resultado = avaliar_agente(args.dataset, args.top_k)
     # Registra no log o resumo do resultado obtido
     logger.info("Resultado: %s", resultado)
+
+
+# Define a função de tratamento para os cenários do Chaos Lab
+def _cmd_chaos_lab(args: argparse.Namespace) -> None:
+    # Docstring da função de Chaos Lab
+    """Executa cenários controlados de injeção de falhas e resiliência."""
+    # Importação tardia das funções executoras de cenários de caos
+    from cinelake.chaos.runner import executar_cenario, executar_todos_cenarios
+
+    # Obtém a instância do logger para este módulo
+    logger = logging.getLogger(__name__)
+    # Verifica se a instrução foi para rodar todos os cenários
+    if args.cenario == "all":
+        # Dispara a execução completa de todos os testes de resiliência
+        resultados = executar_todos_cenarios()
+        # Registra no log a quantidade de cenários testados
+        logger.info("Chaos Lab concluído: %d cenários", len(resultados))
+    # Caso um cenário específico tenha sido solicitado
+    else:
+        # Executa o cenário individual informado via argumento
+        resultado = executar_cenario(args.cenario)
+        # Registra no log o resultado detalhado do teste
+        logger.info("Resultado: %s", resultado)
 
 
 # Ponto de entrada padrão para execução via módulo (ex: python -m cinelake)
