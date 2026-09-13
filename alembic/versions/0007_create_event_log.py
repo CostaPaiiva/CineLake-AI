@@ -50,7 +50,12 @@ def upgrade() -> None:
         # Coluna event_timestamp com fuso horário informando a data/hora original do evento (não nula)
         sa.Column("event_timestamp", sa.DateTime(timezone=True), nullable=False),
         # Coluna ingestion_timestamp com fuso horário informando o momento da gravação com default NOW()
-        sa.Column("ingestion_timestamp", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
+        sa.Column(
+            "ingestion_timestamp",
+            sa.DateTime(timezone=True),
+            server_default=sa.func.now(),
+            nullable=False,
+        ),
     )
 
 

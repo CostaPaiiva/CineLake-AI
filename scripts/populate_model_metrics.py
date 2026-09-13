@@ -21,24 +21,39 @@ def main() -> None:  # Função principal de execução do script
     resultados = avaliar_modelos(top_k=10)  # Executa a avaliação unificada para top_k=10
 
     dados = []  # Lista para acumular os dicionários com as métricas consolidadas
-    for model_name, metricas in resultados.items():  # Percorre cada modelo e seu dicionário de métricas
-        if isinstance(metricas, dict) and "error" not in metricas:  # Filtra resultados válidos sem erro
+    for (
+        model_name,
+        metricas,
+    ) in resultados.items():  # Percorre cada modelo e seu dicionário de métricas
+        if (
+            isinstance(metricas, dict) and "error" not in metricas
+        ):  # Filtra resultados válidos sem erro
             dados.append(  # Adiciona as métricas do modelo à lista dados
                 {
                     "model_name": model_name,  # Nome do modelo de recomendação
-                    "precision_medio": metricas.get("precision_medio", metricas.get("precision", 0.0)),  # Precisão média
-                    "recall_medio": metricas.get("recall_medio", metricas.get("recall", 0.0)),  # Recall médio
+                    "precision_medio": metricas.get(
+                        "precision_medio", metricas.get("precision", 0.0)
+                    ),  # Precisão média
+                    "recall_medio": metricas.get(
+                        "recall_medio", metricas.get("recall", 0.0)
+                    ),  # Recall médio
                     "hit_rate": metricas.get("hit_rate", 0.0),  # Hit Rate
                 }
             )
 
     if dados:  # Se houver dados válidos coletados
         df = pd.DataFrame(dados)  # Converte a lista em DataFrame pandas
-        df.to_sql("model_metrics", engine, if_exists="replace", index=False)  # Salva no banco na tabela model_metrics
-        logger.info("Tabela 'model_metrics' populada com sucesso no PostgreSQL com %d modelos!", len(dados))  # Sucesso
+        df.to_sql(
+            "model_metrics", engine, if_exists="replace", index=False
+        )  # Salva no banco na tabela model_metrics
+        logger.info(
+            "Tabela 'model_metrics' populada com sucesso no PostgreSQL com %d modelos!", len(dados)
+        )  # Sucesso
     else:  # Caso nenhum modelo tenha retornado métricas válidas
         logger.warning("Nenhuma métrica foi gerada para popular a tabela 'model_metrics'.")  # Aviso
 
 
-if __name__ == "__main__":  # Garante que a função main seja executada ao chamar o script diretamente
+if (
+    __name__ == "__main__"
+):  # Garante que a função main seja executada ao chamar o script diretamente
     main()  # Executa a função main

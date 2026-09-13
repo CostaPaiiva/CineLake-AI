@@ -6,6 +6,7 @@ Revises: 0005
 Create Date: 2026-09-01
 
 """
+
 # Importa tipo Sequence do módulo collections.abc para compatibilidade com versões recentes do Python
 from collections.abc import Sequence
 
@@ -44,7 +45,9 @@ def upgrade() -> None:
         # Cria a coluna 'model_name' como Text não nulo
         sa.Column("model_name", sa.Text(), nullable=False),
         # Cria a coluna 'created_at' como DateTime com fuso horário e valor default da data/hora atual no banco
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
+        sa.Column(
+            "created_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False
+        ),
         # Configura a chave primária composta com as colunas user_id, movie_id e model_name
         sa.PrimaryKeyConstraint("user_id", "movie_id", "model_name"),
     )

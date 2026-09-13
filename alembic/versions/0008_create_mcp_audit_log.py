@@ -5,6 +5,7 @@ Revises: 0007
 Create Date: 2026-09-11
 
 """
+
 from collections.abc import Sequence
 
 import sqlalchemy as sa
@@ -30,7 +31,9 @@ def upgrade() -> None:
         sa.Column("result_status", sa.Text(), nullable=False),
         sa.Column("execution_time_ms", sa.Float(), nullable=True),
         sa.Column("error_message", sa.Text(), nullable=True),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
+        sa.Column(
+            "created_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False
+        ),
     )
 
 
