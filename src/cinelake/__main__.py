@@ -262,6 +262,20 @@ def main() -> None:
     # Vincula o subcomando à função que executa todos os benchmarks
     parser_bench.set_defaults(func=_cmd_run_benchmarks)
 
+    # 24. Subcomando: evaluate-agent (Avalia a performance e acurácia do agente RAG+MCP)
+    parser_agent = subparsers.add_parser("evaluate-agent", help="Avalia o agente RAG+MCP")
+    # Adiciona argumento do caminho do dataset com valor default
+    parser_agent.add_argument(
+        "--dataset",
+        type=Path,
+        default=Path("data/agent_evaluation/eval_dataset.json"),
+        help="Dataset de avaliação",
+    )
+    # Adiciona argumento para limitar o top-k de documentos
+    parser_agent.add_argument("--top-k", type=int, default=5, help="Top-K de documentos")
+    # Vincula o subcomando à função correspondente
+    parser_agent.set_defaults(func=_cmd_evaluate_agent)
+
     # Processa os argumentos fornecidos pelo usuário no terminal
     args = parser.parse_args()
 
@@ -594,6 +608,21 @@ def _cmd_run_benchmarks(args: argparse.Namespace) -> None:
     for r in resultados:
         # Imprime cada dicionário de métricas no terminal
         print(r)
+
+
+# Define a função de tratamento para execução da avaliação do agente RAG+MCP
+def _cmd_evaluate_agent(args: argparse.Namespace) -> None:
+    # Docstring da função de avaliação do agente
+    """Executa a avaliação de acurácia e latência do agente RAG + MCP."""
+    # Importação tardia do módulo avaliador do agente
+    from cinelake.agent_eval.evaluate import avaliar_agente
+
+    # Obtém a instância do logger para este módulo
+    logger = logging.getLogger(__name__)
+    # Executa a avaliação do agente com os parâmetros fornecidos via CLI
+    resultado = avaliar_agente(args.dataset, args.top_k)
+    # Registra no log o resumo do resultado obtido
+    logger.info("Resultado: %s", resultado)
 
 
 # Ponto de entrada padrão para execução via módulo (ex: python -m cinelake)
