@@ -1,0 +1,17 @@
+# Atribuição do Token da API da Hetzner Cloud (substitua pelo seu token real no arquivo terraform.tfvars)
+hcloud_token        = "SEU_TOKEN_AQUI"
+
+# Atribuição do nome do servidor VPS a ser criado
+server_name         = "cinelake-vps"
+
+# Atribuição do plano/tamanho da VPS (tipo de hardware cx22 da Hetzner)
+server_type         = "cx22"
+
+# Atribuição da localização geográfica do datacenter (Nuremberg - nbg1)
+location            = "nbg1"
+
+# Atribuição do caminho local onde está armazenada sua chave pública SSH
+ssh_public_key_path = "~/.ssh/id_ed25519.pub"
+
+# Atribuição da faixa de IP autorizada a conectar via SSH (substitua SEU_IP pelo seu IP público real)
+allowed_ssh_cidr    = "SEU_IP/32"

@@ -59,4 +59,22 @@ logs/
 great_expectations/uncommitted/
 great_expectations/expectations/unrendered/
 
+# Terraform
+*.tfstate
+*.tfstate.*
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraformrc
+terraform.rc
+.terraform/
+terraform.tfvars
+terraform.tfvars.json
+*.tfvars
+!*.tfvars.example
+
+
 
