@@ -1,0 +1,46 @@
+{
+  "perguntas": [
+    {
+      "id": "a1",
+      "texto": "Qual pipeline falhou?",
+      "ferramenta_esperada": "get_pipeline_status",
+      "documentos_esperados": [
+        "Runbook: pipeline-failure"
+      ]
+    },
+    {
+      "id": "a2",
+      "texto": "Como está a saúde da plataforma?",
+      "ferramenta_esperada": "get_platform_health",
+      "documentos_esperados": [
+        "ADR: remote-vps-development"
+      ]
+    },
+    {
+      "id": "a3",
+      "texto": "Estamos com dados atrasados?",
+      "ferramenta_esperada": "get_data_freshness",
+      "documentos_esperados": []
+    },
+    {
+      "id": "a4",
+      "texto": "Qual o schema da tabela ratings?",
+      "ferramenta_esperada": "get_table_schema",
+      "documentos_esperados": [
+        "Schema da tabela: ratings"
+      ]
+    },
+    {
+      "id": "a5",
+      "texto": "Existe alguma falha de qualidade?",
+      "ferramenta_esperada": "get_data_quality_failures",
+      "documentos_esperados": []
+    },
+    {
+      "id": "a6",
+      "texto": "Qual é o lineage da coluna movie_id?",
+      "ferramenta_esperada": "get_table_lineage",
+      "documentos_esperados": []
+    }
+  ]
+}
