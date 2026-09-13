@@ -11,7 +11,7 @@ Plataforma de Engenharia de Dados, Recomendação e IA Agêntica de nível produ
 
 ## Status
 
-**Estado do repositório — 13/09/2026:** pipelines batch e streaming, recomendações, RAG, API com Redis, CI/CD, servidor de ferramentas por HTTP, infraestrutura como código e benchmarks implementados.
+**Estado do repositório — 13/09/2026:** pipelines batch e streaming, recomendações, RAG, API com Redis, CI/CD, servidor de ferramentas por HTTP, infraestrutura como código, benchmarks, avaliação do agente RAG+MCP e Chaos Lab implementados.
 
 O projeto é um portfólio em evolução. A existência das configurações não significa que todos os serviços estejam saudáveis na VPS; os badges mostram o resultado dos workflows, e a saúde operacional deve ser conferida separadamente.
 
@@ -34,6 +34,8 @@ O CineLake AI é uma plataforma completa de dados que utiliza dados reais de fil
 - Infraestrutura como código com Terraform e cloud-init para Hetzner Cloud
 - Views analíticas para Power BI
 - Benchmarks de formatos, índices, cache e ingestão
+- Avaliação do agente: seleção de ferramentas, recuperação de documentos e latência
+- Chaos Lab com sete cenários de injeção de falhas para explorar resiliência
 
 ## Ambiente de desenvolvimento
 
@@ -199,6 +201,8 @@ flowchart LR
 | Observabilidade | API FastAPI, exporter Prometheus, Prometheus e Grafana |
 | IA agêntica | API de ferramentas HTTP com Bearer token, auditoria e limite de requisições; integração local RAG+MCP |
 | RAG | Coleta, embeddings, busca vetorial, avaliação e contexto para LLM |
+| Avaliação do agente | Chamadas à API `/ask`, dataset versionado, métricas de ferramentas/documentos e registro no MLflow |
+| Chaos Lab | Cenários de indisponibilidade, falha de pipeline, evento inválido e atraso local |
 
 ## Principais capacidades
 
@@ -217,6 +221,7 @@ flowchart LR
 - Avaliação da recuperação com Recall@k, MRR e Hit Rate@k, com resultado detalhado em JSON.
 - Quatro estratégias de recomendação: popularidade, conteúdo por gêneros, colaborativa e híbrida.
 - Persistência dos rankings por usuário, endpoints de consulta e avaliação offline comparativa.
+- Avaliação ponta a ponta do contexto RAG+MCP, com relatório por pergunta e métricas agregadas.
 
 ## Stack
 
@@ -368,6 +373,8 @@ A tabela `recommendations` é criada pelas migrações do passo 3. O modelo de p
 | `python -m cinelake consume-events --max-mensagens 10` | Consome e persiste eventos válidos |
 | `python -m cinelake serve-mcp` | Inicia o servidor HTTP de ferramentas na porta 8010 |
 | `python -m cinelake run-benchmarks` | Executa os benchmarks integrados ao runner |
+| `python -m cinelake evaluate-agent [--dataset CAMINHO] [--top-k N]` | Avalia seleção de ferramentas, documentos recuperados e latência da API RAG+MCP |
+| `python -m cinelake chaos-lab --cenario NOME` | Executa um cenário de falha; `all` executa os sete cenários e é o padrão se o argumento for omitido |
 
 ## Operação
 
@@ -440,6 +447,15 @@ Defina `MCP_TOKEN` no ambiente e envie `Authorization: Bearer <token>` nas chama
 ### Power BI
 
 O script `scripts/create_powerbi_views.sql` cria as views `mart_powerbi_executive_overview`, `mart_powerbi_recommendation_analytics` e `mart_powerbi_data_engineering_monitoring`. `scripts/populate_model_metrics.py` popula as métricas de modelos.
+
+A avaliação unificada em `cinelake.recommender.evaluate_models` compara `popularity_baseline`, `content_based`, `collaborative_item_item` e `hybrid`. O script de população usa `top_k=10` e grava `model_name`, `precision_medio`, `recall_medio` e `hit_rate` em `model_metrics`, descartando resultados com erro.
+
+```bash
+# Na VPS, usando a .venv com dependências instaladas e recomendações disponíveis
+python scripts/populate_model_metrics.py
+```
+
+O script usa `if_exists="replace"`: substitui a tabela, sem preservar histórico. Se as views já dependerem de `model_metrics`, o PostgreSQL pode impedir essa substituição; a atualização incremental dessa tabela ainda precisa ser implementada. Na configuração inicial, execute a população antes da criação das views.
 
 ```bash
 # Na VPS, com o banco e as tabelas de origem disponíveis
@@ -520,6 +536,65 @@ python -m cinelake evaluate-rag \
   --k 5
 ```
 
+O dataset RAG versionado contém cinco perguntas e usa `documentos_relevantes`. Ele é distinto do dataset de avaliação do agente abaixo.
+
+### Avaliação do agente RAG + MCP
+
+O módulo `cinelake.agent_eval` consulta `POST http://127.0.0.1:8001/ask` e compara a ferramenta escolhida e os títulos dos documentos retornados com o dataset esperado. Prepare o índice RAG e mantenha a API RAG+MCP em execução:
+
+```bash
+# Terminal 1, na VPS, com a .venv ativa
+python -m cinelake serve-rag-mcp --host 127.0.0.1 --port 8001
+```
+
+```bash
+# Terminal 2, na raiz do projeto, com a .venv ativa
+python -m cinelake evaluate-agent \
+  --dataset data/agent_evaluation/eval_dataset.json \
+  --top-k 5
+```
+
+O dataset padrão contém seis perguntas. Cada item usa `id`, `texto`, `ferramenta_esperada` e `documentos_esperados` (títulos exatos; a lista pode estar vazia). Os cenários cobrem pipelines, saúde, freshness, schema, qualidade e linhagem.
+
+| Métrica | Cálculo atual |
+| --- | --- |
+| `tool_selection_accuracy` | Acertos de ferramenta divididos pelo total de perguntas |
+| `document_hit_rate` | Perguntas com ao menos um documento esperado recuperado, divididas pelo total de perguntas |
+| `document_recall_medio` | Média do recall nas respostas bem-sucedidas com documentos esperados |
+| `latencia_media_ms` | Latência média das chamadas bem-sucedidas |
+
+O relatório em `docs/agent_evaluation/resultados.json` inclui resumo, detalhes por pergunta e erros de chamada. O avaliador também tenta enviar as métricas ao experimento `agent_evaluation` do MLflow; falhas nesse envio geram um aviso sem impedir o relatório local.
+
+Na implementação atual, perguntas sem documentos esperados e chamadas com erro entram no denominador do hit rate. Com o dataset padrão, apenas três das seis perguntas têm documentos esperados, limitando esse indicador a 0,5. Consulte os detalhes antes de comparar resultados ou aplicar metas. Essa avaliação mede ferramentas e recuperação de contexto, não a qualidade de uma resposta final gerada por LLM.
+
+### Chaos Lab
+
+O módulo `cinelake.chaos` permite executar sete cenários de falha. Use uma instalação Linux de laboratório, com dependências Python, Docker acessível e os serviços do projeto disponíveis. Os nomes dos containers são fixos no código; os cenários de queda atuam sobre `cinelake-postgres`, `cinelake-minio` e `cinelake-kafka`.
+
+**A execução pode interromper serviços e inserir dados de teste.** O cenário `mcp_down` encerra processos que correspondam a `serve-mcp` via `pkill` e exige reinício manual. Não execute o conjunto completo durante um deploy ou em uma VPS atendendo usuários.
+
+| Cenário | Comportamento implementado |
+| --- | --- |
+| `postgres_down` | Para e inicia o PostgreSQL; verifica a reconexão com `SELECT 1` |
+| `minio_down` | Para e inicia o MinIO, com espera fixa após a inicialização |
+| `kafka_down` | Para e inicia o Kafka, com espera fixa após a inicialização |
+| `mcp_down` | Encerra o servidor de ferramentas local; não o reinicia automaticamente |
+| `pipeline_failure` | Insere uma falha sintética com origem `chaos_test` em `ingestion_batch` |
+| `dlq_event` | Publica um evento inválido em `movie-events`; depende do consumidor para encaminhamento à DLQ |
+| `high_latency` | Pausa o próprio processo do teste; não injeta atraso na API nem na rede |
+
+```bash
+# Exemplo individual: atraso apenas no processo do laboratório
+python -m cinelake chaos-lab --cenario high_latency
+
+# Somente em ambiente de laboratório: executa TODOS os cenários
+python -m cinelake chaos-lab --cenario all
+```
+
+No modo individual, PostgreSQL, MinIO e Kafka ficam parados por 30 segundos; o MCP aguarda 20 segundos, e a pausa local é de 3000 ms. O modo `all` usa 20 segundos nos cenários de queda e 1000 ms na pausa local, além das esperas de inicialização.
+
+A execução individual exibe o resultado nos logs. O modo `all` salva `docs/chaos_lab/resultados.json`, incluindo erros por cenário. O laboratório ainda não comprova recuperação completa: MinIO e Kafka não têm sondas de recuperação nesses cenários, o envio à DLQ não é verificado e os comandos Docker não validam o código de saída. Também não há garantia de reinício em caso de interrupção do teste. Os timestamps do modo `all` são preenchidos após cada cenário e não devem ser usados como duração real.
+
 ### Sistema de recomendação
 
 O CineLake AI possui quatro estratégias:
@@ -572,6 +647,8 @@ mypy src
 │   ├── data_quality/        # Contratos e Great Expectations
 │   ├── observability/       # API, health e métricas
 │   ├── benchmarks/          # Experimentos de desempenho
+│   ├── agent_eval/          # Avaliação HTTP do agente RAG+MCP
+│   ├── chaos/               # Cenários e runner de injeção de falhas
 │   ├── mlops/               # Tracking MLflow
 │   ├── streaming/           # Kafka, validação e DLQ
 │   ├── mcp_server/          # Servidor e ferramentas MCP
@@ -586,19 +663,40 @@ mypy src
 - [Guia operacional](docs/GUIA_OPERACIONAL.md)
 - [Benchmarks e metodologia](docs/benchmarks/README.md)
 - [Template de resultados](docs/benchmarks/resultados.md)
+- [Guia de avaliação do agente](docs/agent_evaluation/README.md)
+- [Guia do Chaos Lab](docs/chaos_lab/README.md)
+- [Dataset de avaliação do agente](data/agent_evaluation/eval_dataset.json)
+- [Dataset de recuperação RAG](data/rag/evaluation/eval_dataset.json)
 - [Configuração Terraform](infrastructure/terraform/main.tf)
 - [ADR-001 — Desenvolvimento em VPS remota](docs/adr/ADR-001-remote-vps-development.md)
 - [ADR-002 — RAG e MCP como camada de IA](docs/adr/ADR-002-rag-mcp-as-ai-layer.md)
 - [ADR-003 — Infraestrutura PostgreSQL em Docker](docs/adr/ADR-003-docker-postgresql-infra.md)
 - [ADR-004 — Ingestão idempotente](docs/adr/ADR-004-ingestion-pipeline-idempotency.md)
 
-## Próximos passos
+## Próximos passos e sugestões de evolução
+
+Se você quiser continuar evoluindo este projeto, sugestões recomendadas:
+
+- **Adicionar PySpark para escala:** Processamento distribuído de grandes volumes de dados no Data Lake.
+- **Implementar Model Registry completo no MLflow:** Gerenciamento do ciclo de vida, estágios (*Staging*, *Production*, *Archived*) e versionamento formal de modelos.
+- **Adicionar OpenTelemetry:** Rastreamento distribuído (*distributed tracing*) de ponta a ponta entre APIs, banco, streaming e chamadas MCP.
+- **Criar alertas com Alertmanager:** Integração do Prometheus Alertmanager com Slack/Discord/Email para notificações de incidentes.
+- **Adicionar data contracts versionados:** Validação rigorosa de schemas e contratos de dados antes da ingestão e transformação.
+- **Implementar multi-tenant no RAG:** Isolamento lógico e controle de acesso por tenant/usuário na busca vetorial do `pgvector`.
+- **Criar CLI interativa para o agente:** Interface conversacional interativa no terminal (estilo chat REPL) com suporte a streaming de tokens.
+
+---
+
+### Melhorias técnicas contínuas
 
 - Supervisionar os processos ainda externos ao Compose, incluindo o servidor de ferramentas HTTP.
 - Evoluir a orquestração do Airflow para os pipelines de ingestão e transformação.
 - Condicionar o deploy ao sucesso do CI e revisar rollback e versionamento efetivo das imagens.
 - Evoluir o tracking MLflow com versionamento de modelos e retreinamento automatizado.
 - Registrar resultados reproduzíveis de benchmarks e integrar partition pruning ao runner.
+- Ampliar os datasets de avaliação e revisar denominadores e metas das métricas do agente.
+- Evoluir o Chaos Lab com recuperação garantida, sondas de saúde, verificação da DLQ e medição correta de duração.
+- Atualizar `model_metrics` sem substituir a tabela e preservar histórico de avaliações.
 - Integrar um provedor LLM para transformar o contexto RAG+MCP em respostas finais.
 - Ampliar o dataset de avaliação e adicionar métricas de relevância e segurança ao fluxo RAG.
 - Gerar linhagem automaticamente a partir dos artefatos do dbt.
