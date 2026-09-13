@@ -149,7 +149,5 @@ class Settings:
         )
 
 
-
-
 # Cria uma instância única global das configurações para ser importada e usada por todo o projeto
 settings = Settings.from_env()

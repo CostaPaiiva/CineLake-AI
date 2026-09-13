@@ -2,8 +2,10 @@
 
 # Importa o módulo nativo de logging do Python para registro de logs e mensagens
 import logging
+
 # Importa o módulo nativo time para medição de tempo de execução das consultas
 import time
+
 # Importa Any do módulo typing para anotações de tipos genéricos
 from typing import Any
 
@@ -18,7 +20,9 @@ logger = logging.getLogger(__name__)
 
 
 # Função responsável por comparar a performance de consultas SQL com e sem índice no PostgreSQL
-def benchmark_index_vs_no_index(tabela: str, coluna: str, valor: int, repeticoes: int = 5) -> dict[str, Any]:
+def benchmark_index_vs_no_index(
+    tabela: str, coluna: str, valor: int, repeticoes: int = 5
+) -> dict[str, Any]:
     """
     Compara consulta com e sem índice.
 
@@ -95,6 +99,9 @@ def benchmark_index_vs_no_index(tabela: str, coluna: str, valor: int, repeticoes
         # Porcentagem de ganho de desempenho obtida com o índice
         "ganho_pct": round(
             # Fórmula de cálculo do percentual de ganho de tempo
-            (1 - sum(tempos_com) / sum(tempos_sem)) * 100, 2
-        ) if sum(tempos_sem) > 0 else 0,
+            (1 - sum(tempos_com) / sum(tempos_sem)) * 100,
+            2,
+        )
+        if sum(tempos_sem) > 0
+        else 0,
     }

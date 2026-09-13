@@ -2,15 +2,19 @@
 
 # Importa o módulo nativo de logging do Python para registro de mensagens
 import logging
+
 # Importa o módulo nativo de tempo para medição do tempo de execução
 import time
+
 # Importa Path da biblioteca pathlib para manipulação orientada a objetos de caminhos no sistema de arquivos
 from pathlib import Path
+
 # Importa Any do módulo typing para anotações de tipos genéricos
 from typing import Any
 
 # Importa a biblioteca pandas para manipulação e leitura de dados em estruturas DataFrame
 import pandas as pd
+
 # Importa o submódulo de parquet do PyArrow para leitura eficiente de arquivos em formato Parquet
 import pyarrow.parquet as pq
 
@@ -19,7 +23,9 @@ logger = logging.getLogger(__name__)
 
 
 # Função principal que realiza o teste comparativo de desempenho entre CSV e Parquet
-def benchmark_csv_vs_parquet(caminho_csv: Path, caminho_parquet: Path, repeticoes: int = 3) -> dict[str, Any]:
+def benchmark_csv_vs_parquet(
+    caminho_csv: Path, caminho_parquet: Path, repeticoes: int = 3
+) -> dict[str, Any]:
     """
     Compara tempo de leitura e tamanho em disco entre CSV e Parquet.
 
@@ -67,7 +73,9 @@ def benchmark_csv_vs_parquet(caminho_csv: Path, caminho_parquet: Path, repeticoe
         tempos_parquet.append(time.time() - inicio)
 
         # Registra no log os tempos medidos para a repetição atual
-        logger.info("Repetição %d: CSV=%.2fs Parquet=%.2fs", i + 1, tempos_csv[-1], tempos_parquet[-1])
+        logger.info(
+            "Repetição %d: CSV=%.2fs Parquet=%.2fs", i + 1, tempos_csv[-1], tempos_parquet[-1]
+        )
 
     # Monta o dicionário com todas as métricas consolidadas do benchmark
     resultado = {
@@ -84,9 +92,7 @@ def benchmark_csv_vs_parquet(caminho_csv: Path, caminho_parquet: Path, repeticoe
         # Porcentagem de redução do tamanho do arquivo obtida ao utilizar Parquet em relação ao CSV
         "reducao_tamanho_pct": round((1 - tamanho_parquet_mb / tamanho_csv_mb) * 100, 2),
         # Porcentagem do ganho de velocidade/desempenho na leitura do Parquet em relação ao CSV
-        "ganho_velocidade_pct": round(
-            (1 - (sum(tempos_parquet) / sum(tempos_csv))) * 100, 2
-        ),
+        "ganho_velocidade_pct": round((1 - (sum(tempos_parquet) / sum(tempos_csv))) * 100, 2),
     }
     # Retorna o dicionário consolidado com os resultados do benchmark
     return resultado

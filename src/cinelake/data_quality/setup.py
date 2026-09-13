@@ -34,7 +34,9 @@ def configurar_ge(contexto: Any) -> None:
     }
     if hasattr(contexto, "sources") and hasattr(contexto.sources, "add_postgres"):
         with contextlib.suppress(Exception):
-            contexto.sources.add_postgres(name="postgres_ratings", connection_string=settings.database_url)
+            contexto.sources.add_postgres(
+                name="postgres_ratings", connection_string=settings.database_url
+            )
     elif hasattr(contexto, "add_or_update_datasource"):
         contexto.add_or_update_datasource(**datasource_config)
     else:
@@ -48,6 +50,7 @@ def configurar_ge(contexto: Any) -> None:
             suite = contexto.add_or_update_expectation_suite("ratings_suite")
         else:
             from great_expectations.core.expectation_suite import ExpectationSuite
+
             suite = ExpectationSuite(expectation_suite_name="ratings_suite")
             contexto.save_expectation_suite(suite, "ratings_suite")
 

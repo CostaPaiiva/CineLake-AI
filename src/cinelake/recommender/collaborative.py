@@ -225,6 +225,7 @@ def gerar_recomendacoes_colaborativas(
         try:
             # Importação local para evitar dependência circular
             from cinelake.recommender.evaluate import avaliar_modelo
+
             # Avalia offline o modelo colaborativo
             metricas = avaliar_modelo(MODEL_NAME, top_k=10)
             # Registra no MLflow os parâmetros e métricas

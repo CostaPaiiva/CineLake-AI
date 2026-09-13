@@ -2,20 +2,25 @@
 
 # Importa o módulo json da biblioteca padrão para serialização e deserialização dos dados em cache
 import json
+
 # Importa o módulo nativo de logging do Python para emissão de mensagens informativas e de diagnóstico
 import logging
+
 # Importa o módulo nativo time para realizar a medição precisa do tempo de resposta das operações
 import time
+
 # Importa Any do módulo typing para anotações de tipos genéricos
 from typing import Any
 
 # Importa o cliente da biblioteca redis para comunicação com o banco em memória Redis
 import redis
+
 # Importa a função text do SQLAlchemy para construção e execução de consultas SQL estruturadas
 from sqlalchemy import text
 
 # Importa as configurações centralizadas da aplicação CineLake
 from cinelake.config import settings
+
 # Importa a função de conexão para obter a Engine do PostgreSQL
 from cinelake.db import get_engine
 
@@ -65,10 +70,14 @@ def benchmark_redis_vs_no_redis(movie_id: int, repeticoes: int = 5) -> dict[str,
     # Realiza a consulta uma única vez no banco de dados para extrair o registro do filme
     with engine.connect() as conn:
         # Executa a consulta SQL e recupera a linha como dicionário mapeado
-        linha = conn.execute(
-            text("SELECT movie_id, title, genres FROM movies WHERE movie_id = :id"),
-            {"id": movie_id},
-        ).mappings().first()
+        linha = (
+            conn.execute(
+                text("SELECT movie_id, title, genres FROM movies WHERE movie_id = :id"),
+                {"id": movie_id},
+            )
+            .mappings()
+            .first()
+        )
     # Verifica se o filme foi encontrado no banco de dados
     if linha:
         # Armazena os dados do filme em formato JSON no Redis com tempo de expiração (TTL) de 300 segundos
@@ -104,6 +113,9 @@ def benchmark_redis_vs_no_redis(movie_id: int, repeticoes: int = 5) -> dict[str,
         # Porcentagem de ganho de performance/velocidade obtida com o uso do Redis
         "ganho_pct": round(
             # Fórmula matemática de cálculo do percentual de ganho de tempo
-            (1 - sum(tempos_com) / sum(tempos_sem)) * 100, 2
-        ) if sum(tempos_sem) > 0 else 0,
+            (1 - sum(tempos_com) / sum(tempos_sem)) * 100,
+            2,
+        )
+        if sum(tempos_sem) > 0
+        else 0,
     }

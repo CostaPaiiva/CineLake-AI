@@ -2,21 +2,27 @@
 
 # Importa o módulo json para persistir os resultados coletados em formato estruturado
 import json
+
 # Importa o módulo nativo de logging do Python para registro de mensagens
 import logging
+
 # Importa Path da biblioteca pathlib para manipulação orientada a objetos de caminhos e diretórios
 from pathlib import Path
+
 # Importa Any do módulo typing para anotações de tipos genéricos
 from typing import Any
 
 # Importa a função de execução do benchmark de CSV versus Parquet
 from cinelake.benchmarks.csv_vs_parquet import benchmark_csv_vs_parquet
-# Importa a função de execução do benchmark de consulta com e sem índice no banco relacional
-from cinelake.benchmarks.index_vs_no_index import benchmark_index_vs_no_index
-# Importa a função de execução do benchmark de latência com e sem cache Redis
-from cinelake.benchmarks.redis_vs_no_redis import benchmark_redis_vs_no_redis
+
 # Importa a função de execução do benchmark de ingestão Full versus Incremental
 from cinelake.benchmarks.incremental_vs_full import benchmark_incremental_vs_full
+
+# Importa a função de execução do benchmark de consulta com e sem índice no banco relacional
+from cinelake.benchmarks.index_vs_no_index import benchmark_index_vs_no_index
+
+# Importa a função de execução do benchmark de latência com e sem cache Redis
+from cinelake.benchmarks.redis_vs_no_redis import benchmark_redis_vs_no_redis
 
 # Obtém a instância do logger correspondente ao módulo atual
 logger = logging.getLogger(__name__)
@@ -98,6 +104,7 @@ def executar_todos_benchmarks() -> list[dict[str, Any]]:
     try:
         # Importa a função utilitária para envio de parâmetros e métricas ao MLflow
         from cinelake.mlops.tracking import log_parametros_e_metricas
+
         # Itera sobre cada dicionário de resultado obtido nos benchmarks
         for r in resultados:
             # Filtra apenas os campos numéricos (inteiros ou floats) que representam métricas

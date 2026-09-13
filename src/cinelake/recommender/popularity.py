@@ -111,7 +111,9 @@ def gerar_recomendacoes_populares(top_n: int = 100, modelo: str = "popularity_ba
     # Abre conexão com o banco de dados para buscar a lista de usuários
     with engine.connect() as conn:
         # Executa consulta SQL e extrai lista contendo o ID de todos os usuários únicos
-        usuarios = [row[0] for row in conn.execute(text("SELECT DISTINCT user_id FROM ratings")).fetchall()]
+        usuarios = [
+            row[0] for row in conn.execute(text("SELECT DISTINCT user_id FROM ratings")).fetchall()
+        ]
 
     # Caso não exista nenhum usuário cadastrado
     if not usuarios:
@@ -182,6 +184,7 @@ def gerar_recomendacoes_populares(top_n: int = 100, modelo: str = "popularity_ba
     try:
         # Importa a função de avaliação offline de popularidade localmente para evitar dependências circulares
         from cinelake.recommender.evaluate import avaliar_modelo_popularidade
+
         # Avalia o modelo de popularidade e retorna o dicionário com as métricas calculadas
         metricas = avaliar_modelo_popularidade(top_k=10)
         # Registra os parâmetros e métricas no experimento 'recommendations' no MLflow

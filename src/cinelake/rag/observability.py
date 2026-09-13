@@ -20,8 +20,11 @@ logger = logging.getLogger(__name__)  # Instancia o logger para este módulo esp
 
 def registrar_consulta(  # Define a função responsável por persistir os detalhes da consulta RAG no banco de dados.
     pergunta: str,  # Texto da pergunta enviada pelo usuário.
-    documentos_recuperados: list[dict[str, Any]],  # Lista de dicionários contendo os documentos recuperados no retriever.
-    ferramenta_mcp: str | None,  # Nome da ferramenta MCP identificada/utilizada (ou None caso nenhuma).
+    documentos_recuperados: list[
+        dict[str, Any]
+    ],  # Lista de dicionários contendo os documentos recuperados no retriever.
+    ferramenta_mcp: str
+    | None,  # Nome da ferramenta MCP identificada/utilizada (ou None caso nenhuma).
     resultado_ferramenta: Any,  # Resultado retornado pela execução da ferramenta MCP (ou None).
     latencia_ms: float,  # Tempo total de execução do processamento em milissegundos.
     status_code: int = 200,  # Código de status HTTP da requisição (padrão 200).
@@ -29,7 +32,9 @@ def registrar_consulta(  # Define a função responsável por persistir os detal
 ) -> None:  # Retorno void (None).
     """Registra uma consulta RAG no log."""  # Docstring descrevendo a funcionalidade da função registrar_consulta.
     engine = get_engine()  # Obtém a engine de conexão do SQLAlchemy.
-    with engine.begin() as conn:  # Abre uma transação no banco com auto-commit e auto-rollback em caso de erro.
+    with (
+        engine.begin() as conn
+    ):  # Abre uma transação no banco com auto-commit e auto-rollback em caso de erro.
         conn.execute(  # Executa o comando de inserção de dados via query SQL pura.
             text("""
                 INSERT INTO rag_query_log
@@ -48,19 +53,29 @@ def registrar_consulta(  # Define a função responsável por persistir os detal
                 "agora": datetime.now(timezone.utc),  # Passa o timestamp atual em UTC.
             },  # Fecha o dicionário de parâmetros.
         )  # Fecha a execução da query conn.execute.
-    logger.debug("Consulta RAG registrada: %s", pergunta[:50])  # Registra em nível DEBUG no log que a consulta foi salva.
+    logger.debug(
+        "Consulta RAG registrada: %s", pergunta[:50]
+    )  # Registra em nível DEBUG no log que a consulta foi salva.
 
 
-def obter_metricas_rag() -> dict[str, Any]:  # Define a função que extrai agregações e métricas de desempenho do RAG.
+def obter_metricas_rag() -> dict[
+    str, Any
+]:  # Define a função que extrai agregações e métricas de desempenho do RAG.
     """Agrega métricas básicas do uso do RAG."""  # Docstring da função obter_metricas_rag.
     engine = get_engine()  # Obtém a engine de conexão do banco de dados.
     with engine.connect() as conn:  # Abre uma conexão de leitura com o banco de dados.
-        total = conn.execute(text("SELECT COUNT(*) FROM rag_query_log")).scalar()  # Conta o número total de consultas registradas na tabela.
+        total = conn.execute(
+            text("SELECT COUNT(*) FROM rag_query_log")
+        ).scalar()  # Conta o número total de consultas registradas na tabela.
         latencia_media = conn.execute(  # Executa query para calcular a latência média das requisições registradas.
-            text("SELECT AVG(latencia_ms) FROM rag_query_log WHERE latencia_ms IS NOT NULL")  # Query SQL calculando a média descartando nulos.
+            text(
+                "SELECT AVG(latencia_ms) FROM rag_query_log WHERE latencia_ms IS NOT NULL"
+            )  # Query SQL calculando a média descartando nulos.
         ).scalar()  # Extrai o valor escalar retornado pela query.
         erros = conn.execute(  # Executa query para contar quantas consultas resultaram em erro ou status >= 400.
-            text("SELECT COUNT(*) FROM rag_query_log WHERE status_code >= 400 OR erro IS NOT NULL")  # Query SQL para contagem de falhas.
+            text(
+                "SELECT COUNT(*) FROM rag_query_log WHERE status_code >= 400 OR erro IS NOT NULL"
+            )  # Query SQL para contagem de falhas.
         ).scalar()  # Extrai a quantidade total de erros.
         rows_ferramenta = conn.execute(
             text("""
@@ -87,7 +102,9 @@ def obter_metricas_rag() -> dict[str, Any]:  # Define a função que extrai agre
 
     return {  # Retorna o dicionário consolidado com todos os indicadores de observabilidade do RAG.
         "total_consultas": total,  # Total absoluto de perguntas processadas.
-        "latencia_media_ms": float(latencia_media) if latencia_media else None,  # Média de latência convertida em float ou None se vazio.
+        "latencia_media_ms": float(latencia_media)
+        if latencia_media
+        else None,  # Média de latência convertida em float ou None se vazio.
         "total_erros": erros,  # Quantidade de falhas registradas.
         "consultas_por_ferramenta": consultas_por_ferramenta,  # Dicionário com a distribuição de uso das ferramentas MCP.
         "ultimas_consultas": ultimas_consultas,  # Histórico das últimas 10 consultas processadas.

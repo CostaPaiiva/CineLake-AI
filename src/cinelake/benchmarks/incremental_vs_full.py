@@ -2,15 +2,19 @@
 
 # Importa o módulo nativo de logging do Python para emissão de logs
 import logging
+
 # Importa o módulo nativo time para medição de tempo de execução
 import time
+
 # Importa Path da biblioteca pathlib para manipulação orientada a objetos de caminhos de arquivos
 from pathlib import Path
+
 # Importa Any do módulo typing para anotações de tipos genéricos
 from typing import Any
 
 # Importa a biblioteca pandas para manipulação eficiente de dados tabulares
 import pandas as pd
+
 # Importa a função text do SQLAlchemy para construção de queries SQL
 from sqlalchemy import text
 
@@ -83,6 +87,9 @@ def benchmark_incremental_vs_full(caminho_csv: Path, repeticoes: int = 3) -> dic
         # Porcentagem de ganho de desempenho obtido com a estratégia incremental
         "ganho_pct": round(
             # Fórmula de cálculo do ganho percentual de tempo
-            (1 - sum(tempos_incr) / sum(tempos_full)) * 100, 2
-        ) if sum(tempos_full) > 0 else 0,
+            (1 - sum(tempos_incr) / sum(tempos_full)) * 100,
+            2,
+        )
+        if sum(tempos_full) > 0
+        else 0,
     }

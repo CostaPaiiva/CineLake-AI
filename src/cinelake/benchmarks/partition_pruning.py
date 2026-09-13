@@ -2,15 +2,19 @@
 
 # Importa o módulo nativo de logging do Python para registro de mensagens
 import logging
+
 # Importa o módulo nativo time para medição precisa de tempo de execução
 import time
+
 # Importa Path da biblioteca pathlib para manipulação orientada a objetos de caminhos de arquivos e diretórios
 from pathlib import Path
+
 # Importa Any do módulo typing para anotações de tipos genéricos
 from typing import Any
 
 # Importa o módulo dataset do PyArrow para leitura particionada e aplicação de filtros em datasets
 import pyarrow.dataset as ds
+
 # Importa o módulo parquet do PyArrow para operações de leitura direta de arquivos Parquet
 import pyarrow.parquet as pq
 
@@ -19,7 +23,9 @@ logger = logging.getLogger(__name__)
 
 
 # Função principal responsável por executar o benchmark comparativo de partition pruning
-def benchmark_partition_pruning(diretorio_partitioned: Path, filtro: dict[str, Any], repeticoes: int = 3) -> dict[str, Any]:
+def benchmark_partition_pruning(
+    diretorio_partitioned: Path, filtro: dict[str, Any], repeticoes: int = 3
+) -> dict[str, Any]:
     """
     Compara leitura completa versus leitura com partition pruning.
 
@@ -64,6 +70,9 @@ def benchmark_partition_pruning(diretorio_partitioned: Path, filtro: dict[str, A
         # Porcentagem de ganho de performance e redução no tempo de leitura
         "ganho_pct": round(
             # Fórmula matemática de cálculo do ganho percentual de tempo
-            (1 - sum(tempos_pruned) / sum(tempos_full)) * 100, 2
-        ) if sum(tempos_full) > 0 else 0,
+            (1 - sum(tempos_pruned) / sum(tempos_full)) * 100,
+            2,
+        )
+        if sum(tempos_full) > 0
+        else 0,
     }

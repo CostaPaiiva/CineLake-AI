@@ -157,6 +157,7 @@ def gerar_recomendacoes_hibridas(
         try:
             # Importação local para evitar dependência circular
             from cinelake.recommender.evaluate import avaliar_modelo
+
             # Avalia offline o modelo híbrido
             metricas = avaliar_modelo(MODEL_NAME, top_k=10)
             # Registra no MLflow os hiperparâmetros (pesos, top_n) e métricas calculadas
@@ -175,7 +176,9 @@ def gerar_recomendacoes_hibridas(
             logger.warning("Falha ao registrar no MLflow: %s", e)
 
         # Registra a mensagem de sucesso detalhando a quantidade de usuários contemplados
-        logger.info("Hybrid: recomendações geradas para %d usuários", combinado["user_id"].nunique())
+        logger.info(
+            "Hybrid: recomendações geradas para %d usuários", combinado["user_id"].nunique()
+        )
     else:
         # Registra um aviso no log caso nenhuma recomendação tenha sido gerada
         logger.warning("Hybrid: nenhuma recomendação gerada")

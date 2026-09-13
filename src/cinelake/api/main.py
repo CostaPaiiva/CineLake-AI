@@ -66,14 +66,18 @@ def _obter_filme_do_banco(movie_id: int) -> dict[str, Any]:
     # Conecta ao banco de dados PostgreSQL
     with engine.connect() as conn:
         # Executa a query SQL retornando o primeiro registro em formato de dicionário de mapeamento
-        resultado = conn.execute(
-            text("""
+        resultado = (
+            conn.execute(
+                text("""
                 SELECT movie_id, title, genres
                 FROM movies
                 WHERE movie_id = :movie_id
             """),
-            {"movie_id": movie_id},
-        ).mappings().first()
+                {"movie_id": movie_id},
+            )
+            .mappings()
+            .first()
+        )
 
     # Caso a consulta não encontre nenhum registro
     if not resultado:
@@ -147,15 +151,19 @@ def listar_filmes(
         # Consulta o número total de filmes na base para metadados de paginação
         total = conn.execute(text("SELECT COUNT(*) FROM movies")).scalar()
         # Consulta a fatia da lista de filmes paginada
-        resultado = conn.execute(
-            text("""
+        resultado = (
+            conn.execute(
+                text("""
                 SELECT movie_id, title, genres
                 FROM movies
                 ORDER BY movie_id
                 LIMIT :limit OFFSET :offset
             """),
-            {"limit": limit, "offset": offset},
-        ).mappings().all()
+                {"limit": limit, "offset": offset},
+            )
+            .mappings()
+            .all()
+        )
 
     # Converte os resultados para uma lista de dicionários
     filmes = [dict(row) for row in resultado]
@@ -185,8 +193,9 @@ def filmes_trending(top_n: int = Query(10, ge=1, le=50)) -> dict[str, Any]:
     # Conecta ao PostgreSQL
     with engine.connect() as conn:
         # Busca as recomendações salvas para o modelo de popularidade no banco de dados
-        resultado = conn.execute(
-            text("""
+        resultado = (
+            conn.execute(
+                text("""
                 SELECT movie_id, score, rank
                 FROM recommendations
                 WHERE model_name = 'popularity_baseline'
@@ -194,8 +203,11 @@ def filmes_trending(top_n: int = Query(10, ge=1, le=50)) -> dict[str, Any]:
                 ORDER BY rank
                 LIMIT :top_n
             """),
-            {"top_n": top_n},
-        ).mappings().all()
+                {"top_n": top_n},
+            )
+            .mappings()
+            .all()
+        )
 
     # Retorna a lista de filmes populares ordenados pelo ranking
     return {"modelo": "popularity_baseline", "recomendacoes": [dict(row) for row in resultado]}
@@ -214,16 +226,20 @@ def recomendacoes_usuario(
     # Conecta ao banco PostgreSQL
     with engine.connect() as conn:
         # Busca as recomendações salvas correspondentes ao usuário e modelo informados
-        resultado = conn.execute(
-            text("""
+        resultado = (
+            conn.execute(
+                text("""
                 SELECT movie_id, score, rank
                 FROM recommendations
                 WHERE model_name = :modelo AND user_id = :user_id
                 ORDER BY rank
                 LIMIT :top_n
             """),
-            {"modelo": modelo, "user_id": user_id, "top_n": top_n},
-        ).mappings().all()
+                {"modelo": modelo, "user_id": user_id, "top_n": top_n},
+            )
+            .mappings()
+            .all()
+        )
 
     # Lança erro 404 caso nenhuma recomendação seja encontrada no banco
     if not resultado:

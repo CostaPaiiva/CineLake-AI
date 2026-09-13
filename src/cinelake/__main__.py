@@ -142,61 +142,87 @@ def main() -> None:
         help="Caminho para o dataset de avaliação",
     )
     # Argumento para quantidade de documentos top-k a considerar na avaliação
-    parser_eval.add_argument(
-        "--k", type=int, default=5, help="Número de documentos top-k"
-    )
+    parser_eval.add_argument("--k", type=int, default=5, help="Número de documentos top-k")
     # Vincula o subcomando à função de execução do evaluate-rag
     parser_eval.set_defaults(func=_cmd_evaluate_rag)
 
     # 11. Subcomando: train-popularity-model (Treina/calcula modelo de popularidade)
-    parser_pop = subparsers.add_parser("train-popularity-model", help="Treina/calcula modelo de popularidade")
+    parser_pop = subparsers.add_parser(
+        "train-popularity-model", help="Treina/calcula modelo de popularidade"
+    )
     # Vincula o subcomando à função de execução do treino de popularidade
     parser_pop.set_defaults(func=_cmd_train_popularity)
 
     # 12. Subcomando: generate-popular-recommendations (Gera recomendações populares)
-    parser_rec = subparsers.add_parser("generate-popular-recommendations", help="Gera recomendações populares")
+    parser_rec = subparsers.add_parser(
+        "generate-popular-recommendations", help="Gera recomendações populares"
+    )
     # Adiciona argumento --top-n para definir o número de recomendações por usuário
-    parser_rec.add_argument("--top-n", type=int, default=100, help="Número de recomendações por usuário")
+    parser_rec.add_argument(
+        "--top-n", type=int, default=100, help="Número de recomendações por usuário"
+    )
     # Vincula o subcomando à função de geração de recomendações
     parser_rec.set_defaults(func=_cmd_generate_popular)
 
     # 13. Subcomando: train-content-based-model (Treina/calcula similaridade content-based)
-    parser_cb = subparsers.add_parser("train-content-based-model", help="Treina/calcula similaridade content-based")
+    parser_cb = subparsers.add_parser(
+        "train-content-based-model", help="Treina/calcula similaridade content-based"
+    )
     # Vincula o subcomando à função de execução do treino content-based
     parser_cb.set_defaults(func=_cmd_train_content_based)
 
     # 14. Subcomando: generate-content-recommendations (Gera recomendações content-based)
-    parser_gen_cb = subparsers.add_parser("generate-content-recommendations", help="Gera recomendações content-based")
+    parser_gen_cb = subparsers.add_parser(
+        "generate-content-recommendations", help="Gera recomendações content-based"
+    )
     # Adiciona argumento --top-n para definir o número de recomendações por usuário
-    parser_gen_cb.add_argument("--top-n", type=int, default=100, help="Número de recomendações por usuário")
+    parser_gen_cb.add_argument(
+        "--top-n", type=int, default=100, help="Número de recomendações por usuário"
+    )
     # Vincula o subcomando à função de geração de recomendações content-based
     parser_gen_cb.set_defaults(func=_cmd_generate_content_based)
 
     # 15. Subcomando: train-collaborative-model (Treina/calcula similaridade colaborativa)
-    parser_cf = subparsers.add_parser("train-collaborative-model", help="Treina/calcula similaridade colaborativa")
+    parser_cf = subparsers.add_parser(
+        "train-collaborative-model", help="Treina/calcula similaridade colaborativa"
+    )
     # Vincula o subcomando à função de execução do treino colaborativo
     parser_cf.set_defaults(func=_cmd_train_collaborative)
 
     # 16. Subcomando: generate-collaborative-recommendations (Gera recomendações colaborativas)
-    parser_gen_cf = subparsers.add_parser("generate-collaborative-recommendations", help="Gera recomendações colaborativas")
+    parser_gen_cf = subparsers.add_parser(
+        "generate-collaborative-recommendations", help="Gera recomendações colaborativas"
+    )
     # Adiciona argumento --top-n para definir o número de recomendações por usuário
-    parser_gen_cf.add_argument("--top-n", type=int, default=100, help="Número de recomendações por usuário")
+    parser_gen_cf.add_argument(
+        "--top-n", type=int, default=100, help="Número de recomendações por usuário"
+    )
     # Vincula o subcomando à função de geração de recomendações colaborativas
     parser_gen_cf.set_defaults(func=_cmd_generate_collaborative)
 
     # 17. Subcomando: generate-hybrid-recommendations (Gera recomendações híbridas)
-    parser_gen_hy = subparsers.add_parser("generate-hybrid-recommendations", help="Gera recomendações híbridas")
+    parser_gen_hy = subparsers.add_parser(
+        "generate-hybrid-recommendations", help="Gera recomendações híbridas"
+    )
     # Adiciona argumento --top-n para definir o número de recomendações por usuário
-    parser_gen_hy.add_argument("--top-n", type=int, default=100, help="Número de recomendações por usuário")
+    parser_gen_hy.add_argument(
+        "--top-n", type=int, default=100, help="Número de recomendações por usuário"
+    )
     # Adiciona argumento --peso-content para o peso do modelo content-based
-    parser_gen_hy.add_argument("--peso-content", type=float, default=0.4, help="Peso do content-based")
+    parser_gen_hy.add_argument(
+        "--peso-content", type=float, default=0.4, help="Peso do content-based"
+    )
     # Adiciona argumento --peso-collab para o peso do modelo colaborativo
-    parser_gen_hy.add_argument("--peso-collab", type=float, default=0.6, help="Peso do collaborative")
+    parser_gen_hy.add_argument(
+        "--peso-collab", type=float, default=0.6, help="Peso do collaborative"
+    )
     # Vincula o subcomando à função de geração de recomendações híbridas
     parser_gen_hy.set_defaults(func=_cmd_generate_hybrid)
 
     # 18. Subcomando: evaluate-all-models (Avalia todos os modelos)
-    parser_eval_models = subparsers.add_parser("evaluate-all-models", help="Avalia todos os modelos")
+    parser_eval_models = subparsers.add_parser(
+        "evaluate-all-models", help="Avalia todos os modelos"
+    )
     # Adiciona argumento --top-k para definir o limite de corte na avaliação
     parser_eval_models.add_argument("--top-k", type=int, default=10, help="Top-K para avaliação")
     # Vincula o subcomando à função de avaliação de todos os modelos
@@ -238,7 +264,6 @@ def main() -> None:
 
     # Processa os argumentos fornecidos pelo usuário no terminal
     args = parser.parse_args()
-
 
     # Executa a função vinculada ao subcomando escolhido
     args.func(args)
@@ -574,5 +599,3 @@ def _cmd_run_benchmarks(args: argparse.Namespace) -> None:
 # Ponto de entrada padrão para execução via módulo (ex: python -m cinelake)
 if __name__ == "__main__":
     main()
-
-

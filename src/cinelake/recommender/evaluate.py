@@ -75,12 +75,16 @@ def avaliar_modelo_popularidade(top_k: int = 10) -> dict[str, Any]:
     min_votos = 50
 
     # Agrupa o conjunto de treino por filme e calcula contagem total de votos e média das notas
-    contagem = treino.groupby("movie_id").agg(
-        # Calcula a contagem total de votos por filme
-        total_votos=("rating", "count"),
-        # Calcula a média das notas por filme
-        media_nota=("rating", "mean"),
-    ).reset_index()  # Restaura o movie_id de índice para coluna comum
+    contagem = (
+        treino.groupby("movie_id")
+        .agg(
+            # Calcula a contagem total de votos por filme
+            total_votos=("rating", "count"),
+            # Calcula a média das notas por filme
+            media_nota=("rating", "mean"),
+        )
+        .reset_index()
+    )  # Restaura o movie_id de índice para coluna comum
 
     # Converte o total de votos para tipo float (v)
     v = contagem["total_votos"].astype(float)
@@ -173,7 +177,9 @@ def avaliar_modelo(model_name: str, top_k: int = 10) -> dict[str, Any]:
     # Carrega do banco de dados as recomendações salvas para o modelo informado até o limite top_k
     with engine.connect() as conn:
         recs = pd.read_sql(
-            text("SELECT user_id, movie_id, rank FROM recommendations WHERE model_name = :modelo AND rank <= :top_k"),
+            text(
+                "SELECT user_id, movie_id, rank FROM recommendations WHERE model_name = :modelo AND rank <= :top_k"
+            ),
             conn,
             params={"modelo": model_name, "top_k": top_k},
         )
@@ -186,7 +192,9 @@ def avaliar_modelo(model_name: str, top_k: int = 10) -> dict[str, Any]:
     # Cria coluna booleana no teste identificando filmes relevantes (nota maior ou igual a 3.5)
     teste["relevante"] = (teste["rating"] >= 3.5).astype(int)
     # Agrupa por usuário os filmes relevantes consumidos no conjunto de teste
-    relevantes_por_user = teste[teste["relevante"] == 1].groupby("user_id")["movie_id"].apply(list).to_dict()
+    relevantes_por_user = (
+        teste[teste["relevante"] == 1].groupby("user_id")["movie_id"].apply(list).to_dict()
+    )
 
     # Inicializa acumuladores de métricas
     precision_total = 0.0

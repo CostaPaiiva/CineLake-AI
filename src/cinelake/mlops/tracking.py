@@ -64,10 +64,11 @@ def get_ou_criar_experimento(nome: str) -> str:
 
 # Função principal para registrar os dados de uma execução (run) de treino ou avaliação de modelo no MLflow
 def log_parametros_e_metricas(
-    experimento_nome: str, # Nome do experimento no qual a execução será registrada
-    parametros: dict, # Dicionário contendo os hiperparâmetros e configurações da execução
-    metricas: dict, # Dicionário contendo os resultados das métricas de desempenho avaliadas
-    artefato_dir: Path | None = None, # Caminho opcional do diretório local contendo arquivos de artefatos para upload
+    experimento_nome: str,  # Nome do experimento no qual a execução será registrada
+    parametros: dict,  # Dicionário contendo os hiperparâmetros e configurações da execução
+    metricas: dict,  # Dicionário contendo os resultados das métricas de desempenho avaliadas
+    artefato_dir: Path
+    | None = None,  # Caminho opcional do diretório local contendo arquivos de artefatos para upload
 ) -> None:
     """
     Registra uma execução no MLflow com parâmetros, métricas e artefatos.

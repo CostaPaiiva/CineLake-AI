@@ -45,7 +45,9 @@ def recomendacoes_populares(
 @router.get("/user/{user_id}", summary="Recomendações personalizadas para um usuário")
 def recomendacoes_usuario(
     user_id: int,
-    modelo: str = Query("hybrid", description="popularity_baseline, content_based, collaborative_item_item, hybrid"),
+    modelo: str = Query(
+        "hybrid", description="popularity_baseline, content_based, collaborative_item_item, hybrid"
+    ),
     top_n: int = Query(10, ge=1, le=50),
 ) -> dict[str, Any]:
     """Retorna recomendações salvas para um usuário usando o modelo especificado."""
@@ -72,7 +74,9 @@ def recomendacoes_usuario(
 @router.get("/model/{model_name}", summary="Retorna recomendações de um modelo específico")
 def recomendacoes_modelo(
     model_name: str,
-    user_id: int | None = Query(None, description="ID do usuário; se omitido, usa o primeiro usuário"),
+    user_id: int | None = Query(
+        None, description="ID do usuário; se omitido, usa o primeiro usuário"
+    ),
     top_n: int = Query(10, ge=1, le=100),
 ) -> dict[str, Any]:
     """Retorna recomendações de um modelo para um usuário."""

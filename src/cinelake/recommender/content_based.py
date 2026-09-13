@@ -246,6 +246,7 @@ def gerar_recomendacoes_content_based(
         try:
             # Importação local para evitar importação circular
             from cinelake.recommender.evaluate import avaliar_modelo
+
             # Executa a avaliação offline do modelo content_based
             metricas = avaliar_modelo(MODEL_NAME, top_k=10)
             # Registra no MLflow os parâmetros e métricas obtidas
