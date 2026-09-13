@@ -33,3 +33,26 @@ Após disponibilizar os certificados na pasta:
 ```bash
 docker compose up -d nginx
 ```
+
+## Renovação Automática
+
+Os certificados Let's Encrypt têm validade de 90 dias. Para renovar automaticamente via cron:
+
+```bash
+sudo crontab -e
+```
+
+Adicione a linha de agendamento:
+
+```text
+0 3 * * * certbot renew --quiet && docker restart cinelake-nginx
+```
+
+## Sem Domínio
+
+Se você não tiver um domínio próprio, configure o Nginx apenas na porta 80 (sem TLS) e mantenha o acesso seguro a dashboards sensíveis (como Grafana, MinIO e MLflow) através de túneis SSH:
+
+```bash
+ssh -L 3000:localhost:3000 -L 5000:localhost:5000 usuario@IP_DA_SUA_VPS
+```
+
