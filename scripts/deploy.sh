@@ -23,6 +23,10 @@ echo "[deploy] Tag atual: $TAG_ATUAL"
 echo "[deploy] Atualizando repositório"
 git pull --ff-only origin main
 
+# Limpa imagens órfãs e camadas antigas do Docker para liberar espaço em disco
+echo "[deploy] Limpando imagens órfãs e cache do Docker para liberar espaço"
+docker image prune -f || true
+
 # Baixa as imagens Docker atualizadas do container registry (GHCR)
 echo "[deploy] Baixando imagens atualizadas"
 docker compose pull
@@ -63,6 +67,9 @@ fi
 
 # Salva a tag da versão bem-sucedida no arquivo .last_good_tag para possibilitar rollback futuro
 echo "$TAG_ATUAL" > .last_good_tag
+
+# Limpeza final de imagens soltas após o deploy bem-sucedido
+docker image prune -f || true
 
 # Exibe mensagem final de sucesso do deploy
 echo "[deploy] Deploy concluído com sucesso"
