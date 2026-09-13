@@ -231,6 +231,11 @@ def main() -> None:
     parser_mcp.add_argument("--port", type=int, default=8010, help="Porta")
     parser_mcp.set_defaults(func=_cmd_serve_mcp)
 
+    # 23. Subcomando: run-benchmarks (Executa todos os benchmarks de performance)
+    parser_bench = subparsers.add_parser("run-benchmarks", help="Executa benchmarks")
+    # Vincula o subcomando à função que executa todos os benchmarks
+    parser_bench.set_defaults(func=_cmd_run_benchmarks)
+
     # Processa os argumentos fornecidos pelo usuário no terminal
     args = parser.parse_args()
 
@@ -545,6 +550,25 @@ def _cmd_serve_mcp(args: argparse.Namespace) -> None:
     logger = logging.getLogger(__name__)
     logger.info("Iniciando MCP remoto em %s:%s", args.host, args.port)
     uvicorn.run(app, host=args.host, port=args.port, log_level="info")
+
+
+# Define a função de tratamento para execução de todos os benchmarks do projeto
+def _cmd_run_benchmarks(args: argparse.Namespace) -> None:
+    # Docstring da função de tratamento de benchmarks
+    """Executa todos os benchmarks configurados."""
+    # Importação tardia da função orquestradora de benchmarks
+    from cinelake.benchmarks.runner import executar_todos_benchmarks
+
+    # Obtém a instância do logger para este módulo
+    logger = logging.getLogger(__name__)
+    # Registra no log o início da execução dos benchmarks via CLI
+    logger.info("Iniciando execução de todos os benchmarks...")
+    # Executa todos os testes de benchmark e recebe a lista de métricas geradas
+    resultados = executar_todos_benchmarks()
+    # Itera sobre os resultados obtidos
+    for r in resultados:
+        # Imprime cada dicionário de métricas no terminal
+        print(r)
 
 
 # Ponto de entrada padrão para execução via módulo (ex: python -m cinelake)
