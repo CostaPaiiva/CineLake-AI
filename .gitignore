@@ -31,9 +31,13 @@ Thumbs.db
 
 # Dados e Arquivos Locais (Evitar vazamento para o GitHub)
 data/
+!data/agent_evaluation/
+!data/agent_evaluation/**
 *.parquet
 *.csv
 *.json
+!data/agent_evaluation/*.json
+!docs/**/*.json
 *.sqlite
 *.db
 
