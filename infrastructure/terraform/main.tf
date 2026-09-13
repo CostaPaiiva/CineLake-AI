@@ -72,8 +72,11 @@ resource "hcloud_server" "cinelake" {
   # Vincula o Firewall criado para proteger a VPS com as regras de portas definidas
   firewall_ids = [hcloud_firewall.cinelake.id]
 
-  # Passa o script/arquivo de inicialização cloud-init para pré-configurar a VPS no primeiro boot
-  user_data = file("${path.module}/cloud-init.yaml")
+  # Processa o arquivo cloud-init.yaml como template e injeta a chave publica SSH na variavel ssh_public_key
+  user_data = templatefile("${path.module}/cloud-init.yaml", {
+    # Conteudo da chave publica SSH lida a partir do caminho configurado na variavel
+    ssh_public_key = file(pathexpand(var.ssh_public_key_path))
+  })
 
   # Mapeamento de tags/etiquetas organizacionais para identificação do servidor
   labels = {
