@@ -12,8 +12,8 @@ import time
 # Importa Path da biblioteca pathlib para manipulação orientada a objetos de caminhos de arquivos
 from pathlib import Path
 
-# Importa Any do módulo typing para tipagem estática rigorosa exigida pelo mypy
-from typing import Any
+# Importa Any e cast do módulo typing para tipagem estática rigorosa exigida pelo mypy
+from typing import Any, cast
 
 # Importa o cliente HTTP httpx para disparar requisições para a API do assistente RAG
 import httpx
@@ -27,7 +27,8 @@ def _carregar_dataset(caminho: Path) -> list[dict[str, Any]]:
     # Abre o arquivo do dataset com codificação UTF-8
     with caminho.open("r", encoding="utf-8") as f:
         # Carrega o JSON e retorna a lista associada à chave 'perguntas'
-        return json.load(f)["perguntas"]
+        dados: dict[str, Any] = json.load(f)
+        return cast(list[dict[str, Any]], dados["perguntas"])
 
 
 # Função auxiliar que dispara uma requisição POST para a rota /ask da API RAG
@@ -44,7 +45,7 @@ def _chamar_api(pergunta: str, top_k: int = 5) -> dict[str, Any]:
         # Dispara exceção caso a resposta retorne código de erro HTTP (ex: 4xx ou 5xx)
         resposta.raise_for_status()
         # Retorna o corpo da resposta convertido em dicionário
-        return resposta.json()
+        return cast(dict[str, Any], resposta.json())
 
 
 # Função principal que executa a avaliação completa do agente RAG + MCP
