@@ -5,15 +5,32 @@
 [![CI](https://github.com/CostaPaiiva/CineLake-AI/actions/workflows/ci.yml/badge.svg)](https://github.com/CostaPaiiva/CineLake-AI/actions/workflows/ci.yml)
 [![Deploy](https://github.com/CostaPaiiva/CineLake-AI/actions/workflows/deploy.yml/badge.svg)](https://github.com/CostaPaiiva/CineLake-AI/actions/workflows/deploy.yml)
 
-Plataforma de Engenharia de Dados, Recomendação e IA Agêntica de nível produção.
+**Engenharia de Dados · Sistemas de Recomendação · IA Agêntica**
+
+Do dado bruto à API: uma plataforma de portfólio com ingestão, modelagem analítica, avaliação e operação automatizada.
+
+[Arquitetura](#arquitetura) · [Início rápido](#início-rápido) · [CI/CD](#cicd) · [Segurança](#segurança-e-proxy-reverso) · [Documentação](#documentação)
 
 </div>
 
 ## Status
 
-**Estado do repositório — 13/09/2026:** pipelines batch e streaming, recomendações, RAG, API com Redis, CI/CD, servidor de ferramentas por HTTP, infraestrutura como código, benchmarks, avaliação do agente RAG+MCP e Chaos Lab implementados.
+**Projeto de portfólio concluído.** O escopo entregue reúne pipelines batch e streaming, recomendações, RAG+MCP, API com Redis, CI/CD, Terraform, benchmarks, avaliação do agente, Chaos Lab e configuração de proxy reverso com guias de segurança.
 
-O projeto é um portfólio em evolução. A existência das configurações não significa que todos os serviços estejam saudáveis na VPS; os badges mostram o resultado dos workflows, e a saúde operacional deve ser conferida separadamente.
+As sugestões de evolução estão registradas ao final. Os badges apresentam os resultados do CI e do Deploy; a configuração de domínio, certificados e saúde dos serviços pertence à operação de cada ambiente.
+
+## Destaques técnicos
+
+| Competência | Evidência no projeto |
+| --- | --- |
+| Engenharia de dados | Ingestão idempotente MovieLens/TMDb, auditoria de execuções e Bronze em Parquet/MinIO |
+| Analytics engineering | Modelos dimensionais dbt, validação de dados e views para Power BI |
+| Machine Learning | Quatro estratégias de recomendação, avaliação offline e tracking MLflow |
+| IA aplicada | Busca vetorial com pgvector, ferramentas HTTP autenticadas e avaliação RAG+MCP |
+| Entrega e operação | GitHub Actions, imagem no GHCR, deploy SSH, métricas e configuração Nginx |
+| Experimentação | Benchmarks e cenários de falha com limitações e metodologia documentadas |
+
+As decisões de arquitetura estão registradas em ADRs; os resultados quantitativos devem ser consultados nos relatórios gerados, sem tratar templates como medições realizadas.
 
 ## O que é o CineLake AI?
 
@@ -36,6 +53,7 @@ O CineLake AI é uma plataforma completa de dados que utiliza dados reais de fil
 - Benchmarks de formatos, índices, cache e ingestão
 - Avaliação do agente: seleção de ferramentas, recuperação de documentos e latência
 - Chaos Lab com sete cenários de injeção de falhas para explorar resiliência
+- Proxy reverso Nginx, configuração TLS e guias de credenciais e hardening da VPS
 
 ## Ambiente de desenvolvimento
 
@@ -45,6 +63,7 @@ A plataforma roda em uma única VPS Ubuntu. O PC local é usado para PowerShell/
 
 | Serviço | Descrição | Porta (host) |
 | --- | --- | --- |
+| Nginx | Proxy reverso HTTP/HTTPS, após configurar domínio e certificados | `80`, `443` (públicas) |
 | API | Aplicação principal | `127.0.0.1:8002` |
 | PostgreSQL | Banco principal com pgvector | `127.0.0.1:5432` |
 | MinIO | Armazenamento de objetos | `127.0.0.1:9000` |
@@ -136,21 +155,15 @@ python -m cinelake consume-events --max-mensagens 100
 
 O consumidor utiliza commit manual de offsets, grupo `cinelake-consumer` e gravação idempotente por `event_id`. Configure o broker pela variável `KAFKA_BOOTSTRAP_SERVERS` (padrão: `127.0.0.1:9092`). A migração `0007_create_event_log.py` cria a tabela de auditoria dos eventos.
 
-### Plataforma de engenharia de dados para o domínio cinematográfico
-
-_Ingestão confiável, Data Lake em camadas, qualidade de dados, modelagem analítica e interfaces para agentes de IA._
-
-[Visão geral](#visão-geral) · [Início rápido](#início-rápido) · [Arquitetura](#arquitetura) · [Operação](#operação) · [Documentação](#documentação)
-
 ---
 
 ## Visão geral
 
 O **CineLake AI** é um projeto de portfólio que constrói uma plataforma de dados end-to-end usando o catálogo do [MovieLens](https://grouplens.org/datasets/movielens/) e metadados do [TMDb](https://www.themoviedb.org/). O foco é demonstrar decisões de engenharia aplicáveis a um ambiente de produção: pipelines idempotentes, rastreabilidade de execuções, armazenamento em camadas, contratos de dados, modelo dimensional e observabilidade.
 
-O ambiente-alvo é uma VPS Ubuntu. Os serviços de infraestrutura ficam isolados em Docker e suas portas são vinculadas a `127.0.0.1`; o acesso remoto é feito por túnel SSH.
+O ambiente-alvo é uma VPS Ubuntu. As portas diretas dos serviços internos são vinculadas a `127.0.0.1`, com acesso remoto por túnel SSH. O Nginx é a exceção: publica as portas 80 e 443 para acesso por domínio após a configuração do proxy e dos certificados.
 
-> Estado atual: fundação de dados implementada — PostgreSQL com pgvector, ingestões MovieLens/TMDb, camada Bronze no MinIO, dbt, Great Expectations, observabilidade, servidor MCP, RAG auditável e recomendação por popularidade, conteúdo, filtragem colaborativa e modelo híbrido.
+O escopo reúne a fundação de dados, a camada de recomendação e as ferramentas de entrega, observabilidade e avaliação descritas neste README.
 
 ## Arquitetura
 
@@ -187,6 +200,10 @@ flowchart LR
     EVAL["Avaliação Recall - MRR - Hit Rate"] --> VDB
     EXP["Exporter Prometheus"] --> PROM["Prometheus"]
     PROM --> GRAF["Grafana"]
+    CLIENT["Cliente HTTP"] --> NGINX["Nginx / TLS configurável"]
+    NGINX --> API["API principal"]
+    API --> PG
+    API --> REDIS[("Redis")]
 ```
 
 | Camada | Implementação atual |
@@ -262,6 +279,17 @@ TMDB_API_KEY=sua_chave_do_tmdb
 ```
 
 Nunca envie o `.env` ao repositório. Ele contém credenciais e já está ignorado pelo Git.
+
+### Política de publicação segura
+
+Este README contém apenas valores locais, placeholders e nomes de variáveis. Antes de publicar alterações, confirme que nenhum valor real foi inserido na documentação ou em arquivos versionados:
+
+- não inclua `.env`, `terraform.tfvars`, arquivos `.pem`, chaves SSH privadas ou tokens;
+- use `*.example` para configurações de referência, sempre com valores fictícios;
+- mantenha senhas, tokens e chaves em secrets do GitHub, no ambiente da VPS ou em um cofre de segredos;
+- revise `git diff` antes do commit e remova qualquer credencial que apareça no histórico.
+
+Os endereços `127.0.0.1` usados nos exemplos são interfaces locais da máquina onde os serviços estão executando. Substitua-os por placeholders como `<IP_DA_VPS>` ou `<DOMINIO>` em exemplos destinados a ambientes externos.
 
 ### 3. Iniciar a infraestrutura e criar o schema
 
@@ -377,6 +405,39 @@ A tabela `recommendations` é criada pelas migrações do passo 3. O modelo de p
 | `python -m cinelake chaos-lab --cenario NOME` | Executa um cenário de falha; `all` executa os sete cenários e é o padrão se o argumento for omitido |
 
 ## Operação
+
+### Segurança e proxy reverso
+
+O Compose inclui `nginx:alpine` com configurações em `infrastructure/nginx/`. O virtual host usa o domínio de exemplo `cinelake.seudominio.com`, redireciona HTTP para HTTPS e reserva `/.well-known/acme-challenge/` para validação ACME.
+
+| Rota pública configurada | Destino interno |
+| --- | --- |
+| `/api/` | `api:8002` |
+| `/rag/` | `api:8001` |
+| `/mcp/` | `api:8010` |
+| `/grafana/` | `grafana:3000` |
+| `/mlflow/` | `mlflow:5000` |
+
+A rota `/api/` aplica limite de 20 requisições por segundo por IP, com tolerância de pico de 40. A configuração não adiciona autenticação no proxy; cada serviço precisa de seus próprios controles de acesso. Grafana e MLflow também precisam ser configurados para funcionamento sob subcaminhos.
+
+Antes de iniciar o Nginx, substitua o domínio de exemplo e disponibilize `fullchain.pem` e `privkey.pem` em `infrastructure/nginx/certs/`. Sem esses arquivos, o bloco HTTPS não inicia. O Dockerfile atual inicia apenas a API principal; as rotas `/rag/` e `/mcp/` dependem de processos acessíveis nos destinos configurados e não são ativadas somente pela presença das rotas.
+
+```bash
+# Na VPS, após preparar domínio e certificados
+docker compose run --rm --no-deps nginx nginx -t
+docker compose up -d nginx
+```
+
+O [guia Nginx/TLS](docs/security/nginx_tls.md) descreve a emissão com Certbot. A renovação exige manter os certificados montados sincronizados: se forem copiados do diretório do Let's Encrypt, o processo de renovação deve atualizar essas cópias antes de recarregar o Nginx. No modo standalone, a porta 80 precisa estar disponível para o Certbot.
+
+Os guias de [credenciais](docs/security/credentials.md) e [hardening](docs/security/hardening.md) cobrem senhas, SSH, UFW, Fail2ban e atualizações do sistema. São procedimentos de configuração, não confirmação de que foram aplicados na VPS. Para bancos já inicializados, alterar apenas o `.env` não altera a senha persistida: a rotação também precisa ser realizada no serviço.
+
+```bash
+# Verificação básica no host Linux, na raiz do repositório
+bash scripts/security_check.sh
+```
+
+O script consulta UFW, Fail2ban, sockets em escuta, permissões do `.env` e usuários configurados nos containers. Requer `sudo`, systemd e Docker; pode parar se uma verificação falhar. Seu relatório é uma inspeção operacional, não uma certificação de segurança.
 
 ### Observabilidade
 
@@ -639,6 +700,7 @@ mypy src
 ├── dbt_project/             # Modelos staging e marts
 ├── docs/                    # Guia operacional e ADRs
 ├── infrastructure/          # Configuração de Prometheus e Grafana
+│   ├── nginx/               # Proxy reverso e configuração HTTP/TLS
 │   └── terraform/           # Hetzner Cloud, firewall e cloud-init
 ├── scripts/                 # Deploy, rollback, CI e views Power BI
 ├── src/cinelake/
@@ -661,6 +723,9 @@ mypy src
 ## Documentação
 
 - [Guia operacional](docs/GUIA_OPERACIONAL.md)
+- [Nginx e certificados TLS](docs/security/nginx_tls.md)
+- [Hardening da VPS](docs/security/hardening.md)
+- [Gerenciamento de credenciais](docs/security/credentials.md)
 - [Benchmarks e metodologia](docs/benchmarks/README.md)
 - [Template de resultados](docs/benchmarks/resultados.md)
 - [Guia de avaliação do agente](docs/agent_evaluation/README.md)
