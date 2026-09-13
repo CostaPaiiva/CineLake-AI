@@ -353,6 +353,32 @@ services:
       timeout: 10s
       retries: 5
 
+  # Serviço do Nginx como Reverse Proxy e terminação TLS/SSL
+  nginx:
+    # Imagem oficial leve do Nginx baseada em Alpine Linux
+    image: nginx:alpine
+    # Nome do container em execução
+    container_name: cinelake-nginx
+    # Reinicia o container automaticamente em caso de queda
+    restart: unless-stopped
+    # Portas HTTP (80) e HTTPS (443) expostas publicamente
+    ports:
+      - "80:80"
+      - "443:443"
+    # Mapeamento dos volumes de configuração, certificados e validação do Let's Encrypt
+    volumes:
+      - ./infrastructure/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./infrastructure/nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./infrastructure/nginx/certs:/etc/nginx/certs:ro
+      - ./infrastructure/nginx/www:/var/www/certbot:ro
+    # Rede de comunicação interna para rotear o tráfego aos serviços da aplicação
+    networks:
+      - cinelake-network
+    # Depende da inicialização prévia do serviço da API principal
+    depends_on:
+      api:
+        condition: service_started
+
 # Definição dos volumes persistentes nomeados
 volumes:
   # Volume para persistência dos dados do PostgreSQL
