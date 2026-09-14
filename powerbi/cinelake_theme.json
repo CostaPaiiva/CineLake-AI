@@ -1,0 +1,88 @@
+{
+  "name": "CineLake AI Dark Executive",
+  "dataColors": [
+    "#38BDF8",
+    "#818CF8",
+    "#34D399",
+    "#FBBF24",
+    "#F43F5E",
+    "#A855F7",
+    "#06B6D4",
+    "#EC4899"
+  ],
+  "background": "#0B0F19",
+  "foreground": "#F8FAFC",
+  "tableAccent": "#38BDF8",
+  "visualStyles": {
+    "*": {
+      "*": {
+        "background": [
+          {
+            "color": { "solid": { "color": "#161F30" } },
+            "transparency": 0
+          }
+        ],
+        "border": [
+          {
+            "show": true,
+            "color": { "solid": { "color": "#1E293B" } },
+            "radius": 10
+          }
+        ],
+        "dropShadow": [
+          {
+            "show": true,
+            "color": { "solid": { "color": "#000000" } },
+            "transparency": 40,
+            "position": "Outer",
+            "preset": "BottomRight"
+          }
+        ],
+        "title": [
+          {
+            "show": true,
+            "fontColor": { "solid": { "color": "#F8FAFC" } },
+            "fontFamily": "Segoe UI Semibold",
+            "fontSize": 13,
+            "alignment": "Left"
+          }
+        ],
+        "labels": [
+          {
+            "color": { "solid": { "color": "#94A3B8" } },
+            "fontFamily": "Segoe UI",
+            "fontSize": 10
+          }
+        ]
+      }
+    },
+    "page": {
+      "*": {
+        "background": [
+          {
+            "color": { "solid": { "color": "#0B0F19" } },
+            "transparency": 0
+          }
+        ]
+      }
+    },
+    "card": {
+      "*": {
+        "labels": [
+          {
+            "color": { "solid": { "color": "#38BDF8" } },
+            "fontSize": 24,
+            "fontFamily": "Segoe UI Bold"
+          }
+        ],
+        "categoryLabels": [
+          {
+            "color": { "solid": { "color": "#94A3B8" } },
+            "fontSize": 11,
+            "fontFamily": "Segoe UI"
+          }
+        ]
+      }
+    }
+  }
+}

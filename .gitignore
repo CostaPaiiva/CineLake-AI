@@ -35,7 +35,9 @@ data/
 !data/agent_evaluation/**
 *.parquet
 *.csv
+!powerbi/**/*.csv
 *.json
+!powerbi/**/*.json
 !data/agent_evaluation/*.json
 !docs/**/*.json
 *.sqlite
