@@ -1,0 +1,7 @@
+Indicador,Valor,Meta,Status_SLA,Descricao
+SLA Global de Pipelines,99.4%,>= 99.0%,Conforme,Disponibilidade dos pipelines nos últimos 30 dias
+Freshness Médio dos Dados,2.1 horas,<= 24.0 horas,Conforme,Tempo médio desde a última ingestão
+Data Quality Pass Rate,100.0%,100.0%,Conforme,Testes de integridade (dbt + Great Expectations)
+Pipelines Monitorados,8 DAGs,8 DAGs,Conforme,"Pipelines ativos nas camadas Bronze, Silver e Gold"
+Volumetria Total Processada,1.85M linhas,1.50M linhas,Conforme,Total de registros processados na semana
+MTTR (Tempo Médio de Recuperação),14 min,< 30 min,Conforme,Tempo médio para recuperação automática de jobs
